@@ -14,7 +14,7 @@ go get github.com/daodao97/ggm
 
 ## usage
 
-Below is an example which shows some common use cases for sqlx. Check [model_test.go](./model_test.go) for more usage.
+Below is an example which shows some common use cases for ggm. Check [model_test.go](./model_test.go) for more usage.
 
 ```go
 package main
