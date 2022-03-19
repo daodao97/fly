@@ -11,6 +11,7 @@ type User struct {
 	Id      int             `db:"id,pk"   json:"id"`
 	Name    string          `db:"name"    json:"name"`
 	Profile *Json[*Profile] `db:"profile" json:"profile"`
+	CTime   Time            `db:"ctime"   json:"ctime"`
 }
 
 func (u User) Table() string {

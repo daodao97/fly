@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"time"
 )
 
 type DataType[T any] interface {
@@ -47,15 +48,56 @@ func (j *Json[T]) Scan(value any) error {
 	return err
 }
 
-func (j *Json[T]) MarshalJSON() ([]byte, error) {
+func (j Json[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(j.data)
 }
 
-func (j *Json[T]) UnmarshalJSON(b []byte) error {
+func (j Json[T]) UnmarshalJSON(b []byte) error {
 	err := json.Unmarshal(b, &j.data)
 	return err
 }
 
 func (j Json[T]) Get() T {
 	return j.data
+}
+
+const TimeFormat = "2006-01-02 15:04:05"
+
+type Time time.Time
+
+func (t Time) Value() (driver.Value, error) {
+	return t, nil
+}
+
+func (t *Time) Scan(value any) error {
+	v, ok := value.(time.Time)
+	if ok {
+		*t = Time(v)
+		return nil
+	}
+	return fmt.Errorf("can not convert %v to timestamp", v)
+}
+
+func (t Time) MarshalJSON() ([]byte, error) {
+	_t := (time.Time)(t)
+	if _t.IsZero() {
+		return []byte("null"), nil
+	}
+	formatted := fmt.Sprintf("\"%s\"", _t.Format(TimeFormat))
+	return []byte(formatted), nil
+}
+
+func (t *Time) UnmarshalJSON(data []byte) error {
+	if len(data) == 2 {
+		*t = Time(time.Time{})
+		return nil
+	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	now, err := time.ParseInLocation(`"`+TimeFormat+`"`, string(data), loc)
+	*t = Time(now)
+	return err
+}
+
+func (t *Time) Get() *time.Time {
+	return (*time.Time)(t)
 }
