@@ -12,6 +12,8 @@ type User struct {
 	Name    string          `db:"name"    json:"name"`
 	Profile *Json[*Profile] `db:"profile" json:"profile"`
 	CTime   Time            `db:"ctime"   json:"ctime"`
+	Score   int             `db:"score"   json:"score" hasOne:"user_score:uid"`
+	Score2  int             `db:"score2"   json:"score2" hasOne:"user_score:uid"`
 }
 
 func (u User) Table() string {
@@ -100,7 +102,7 @@ func TestModel_Select(t *testing.T) {
 	assert.Equal(t, nil, err)
 	jsonStr, err := json.Marshal(list)
 	assert.Equal(t, nil, err)
-	fmt.Println(string(jsonStr))
+	fmt.Println("list: ", string(jsonStr))
 }
 
 func TestModel_Update(t *testing.T) {

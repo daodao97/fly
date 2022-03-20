@@ -41,11 +41,11 @@ func New[T TableName]() *model[T] {
 		m.fakeDeleteKey = fd.FakeDeleteKey()
 	}
 
-	info, err := structInfo[T]()
+	info, err := structInfo2[T]()
 	if err != nil {
 		m.err = err
 	}
-	m.fieldInfo = info
+	m.modelInfo = info
 	return m
 }
 
@@ -64,7 +64,7 @@ type model[T TableName] struct {
 	err           error
 	table         string
 	fakeDeleteKey string
-	fieldInfo     []field
+	modelInfo     *modelInfo
 }
 
 func (m *model[T]) GetDB() *sqlx.DB {
@@ -104,6 +104,11 @@ func (m *model[T]) Select(condition ...Option) ([]T, error) {
 
 	var result []T
 	err = m.client.Select(&result, _sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err = m.hasOneData(result)
 	if err != nil {
 		return nil, err
 	}
@@ -254,19 +259,14 @@ func (m *model[T]) Exec(sql string, args ...any) (sql.Result, error) {
 }
 
 func (m *model[T]) tFields() (fields []string, err error) {
-	for _, f := range m.fieldInfo {
+	for _, f := range m.modelInfo.Fields {
 		fields = append(fields, f.Name)
 	}
 	return fields, nil
 }
 
 func (m *model[T]) pk() string {
-	for _, f := range m.fieldInfo {
-		if f.IsPrimaryKey {
-			return f.Name
-		}
-	}
-	return ""
+	return m.modelInfo.PrimaryKey
 }
 
 func (m *model[T]) tFieldValue(t T) (field []string, value []any, err error) {
@@ -282,4 +282,58 @@ func (m *model[T]) tFieldValue(t T) (field []string, value []any, err error) {
 	}
 
 	return field, value, nil
+}
+
+func (m model[T]) hasOneData(list []T) ([]T, error) {
+	for _, opt := range m.modelInfo.HasOne {
+		_db, exist := DB(opt.Conn)
+		if !exist {
+			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
+		}
+		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+opt.LocalKey)
+		_sql, args := SelectBuilder(Field(fields...), Table(opt.Table))
+		var _result []T
+		err := _db.Select(&_result, _sql, args...)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, a := range list {
+			av := reflect.Indirect(reflect.ValueOf(a))
+			f, err := m.getStructFieldNameByTagName(opt.LocalKey)
+			if err != nil {
+				return nil, err
+			}
+			pk := av.FieldByName(f)
+			for _, b := range _result {
+				bv := reflect.Indirect(reflect.ValueOf(b))
+				fk := bv.FieldByName(f)
+				if pk.Interface() == fk.Interface() {
+					for _, k := range opt.OtherKeys {
+						_f, err := m.getStructFieldNameByTagName(k)
+						if err != nil {
+							return nil, err
+						}
+						av.FieldByName(_f).Set(bv.FieldByName(_f))
+					}
+				}
+			}
+		}
+	}
+
+	return list, nil
+}
+
+func (m model[T]) getStructFieldNameByTagName(name string) (string, error) {
+	for _, v := range m.modelInfo.Fields {
+		if v.Name == name {
+			return v.Field, nil
+		}
+	}
+	for _, v := range m.modelInfo.OtherFields {
+		if v.Name == name {
+			return v.Field, nil
+		}
+	}
+	return "", errors.New("not found db tag: " + name)
 }
