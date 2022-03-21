@@ -41,7 +41,7 @@ func New[T TableName]() *model[T] {
 		m.fakeDeleteKey = fd.FakeDeleteKey()
 	}
 
-	info, err := structInfo2[T]()
+	info, err := structInfo[T]()
 	if err != nil {
 		m.err = err
 	}
@@ -284,20 +284,21 @@ func (m *model[T]) tFieldValue(t T) (field []string, value []any, err error) {
 	return field, value, nil
 }
 
+type reflectValueCache struct {
+	Value   reflect.Value
+	Pk      string
+	PkValue reflect.Value
+}
+
 func (m model[T]) hasOneData(list []T) ([]T, error) {
 	for _, opt := range m.modelInfo.HasOne {
 		_db, exist := DB(opt.Conn)
 		if !exist {
 			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
 		}
-		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+opt.LocalKey)
-		_sql, args := SelectBuilder(Field(fields...), Table(opt.Table))
-		var _result []T
-		err := _db.Select(&_result, _sql, args...)
-		if err != nil {
-			return nil, err
-		}
 
+		var pkv []any
+		var rc []reflectValueCache
 		for _, a := range list {
 			av := reflect.Indirect(reflect.ValueOf(a))
 			f, err := m.getStructFieldNameByTagName(opt.LocalKey)
@@ -305,16 +306,38 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 				return nil, err
 			}
 			pk := av.FieldByName(f)
+			pkv = append(pkv, pk.Interface())
+			rc = append(rc, reflectValueCache{
+				Value:   av,
+				Pk:      f,
+				PkValue: pk,
+			})
+		}
+
+		if len(pkv) == 0 {
+			return nil, errors.New("hasOne pk value is empty")
+		}
+
+		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+opt.LocalKey)
+		_sql, args := SelectBuilder(Field(fields...), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
+
+		var _result []T
+		err := _db.Select(&_result, _sql, args...)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, av := range rc {
 			for _, b := range _result {
 				bv := reflect.Indirect(reflect.ValueOf(b))
-				fk := bv.FieldByName(f)
-				if pk.Interface() == fk.Interface() {
+				fk := bv.FieldByName(av.Pk)
+				if av.PkValue.Interface() == fk.Interface() {
 					for _, k := range opt.OtherKeys {
 						_f, err := m.getStructFieldNameByTagName(k)
 						if err != nil {
 							return nil, err
 						}
-						av.FieldByName(_f).Set(bv.FieldByName(_f))
+						av.Value.FieldByName(_f).Set(bv.FieldByName(_f))
 					}
 				}
 			}

@@ -21,36 +21,7 @@ type dbFields struct {
 	Field   string
 }
 
-func structInfo[T any]() ([]field, error) {
-	t := reflect.TypeOf(new(T))
-	if t.Elem().Kind() == reflect.Pointer {
-		t = reflect.TypeOf(*new(T))
-	}
-	sType := t.Elem()
-
-	if sType.Kind() != reflect.Struct {
-		return nil, errors.New("generic type T must be a struct")
-	}
-	var fields []field
-	for i := 0; i < sType.NumField(); i++ {
-		f := sType.Field(i)
-		tag := f.Tag.Get("db")
-		if tag == "" {
-			continue
-		}
-		tokens := strings.Split(tag, ",")
-		if tokens[0] == "" {
-			continue
-		}
-		fields = append(fields, field{
-			Name:         tokens[0],
-			IsPrimaryKey: InArr(tokens, "pk"),
-		})
-	}
-	return fields, nil
-}
-
-func structInfo2[T any]() (*modelInfo, error) {
+func structInfo[T any]() (*modelInfo, error) {
 	t := reflect.TypeOf(new(T))
 	if t.Elem().Kind() == reflect.Pointer {
 		t = reflect.TypeOf(*new(T))
@@ -112,5 +83,24 @@ func structInfo2[T any]() (*modelInfo, error) {
 			m.HasMany = append(m.HasOne, hasManyOpt)
 		}
 	}
+	m.HasOne = uniqueHas(m.HasOne)
+	m.HasMany = uniqueHas(m.HasMany)
 	return m, nil
+}
+
+func uniqueHas(opts []*hasOpts) (uniq []*hasOpts) {
+	tmp := make(map[string]*hasOpts)
+	for _, v := range opts {
+		k := v.Conn + v.DB + v.Table
+		if _v, ok := tmp[k]; ok {
+			_v.OtherKeys = append(tmp[k].OtherKeys, v.OtherKeys...)
+			tmp[k] = _v
+		} else {
+			tmp[k] = v
+		}
+	}
+	for _, v := range tmp {
+		uniq = append(uniq, v)
+	}
+	return uniq
 }

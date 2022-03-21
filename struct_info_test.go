@@ -6,7 +6,7 @@ import (
 )
 
 func Test_reflectInfo(t *testing.T) {
-	info, err := structInfo2[User]()
+	info, err := structInfo[User]()
 	assert.Equal(t, nil, err)
 	JsonDump(info)
 }
