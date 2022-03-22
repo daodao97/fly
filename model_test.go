@@ -13,7 +13,8 @@ type User struct {
 	Profile *Json[*Profile] `db:"profile" json:"profile"`
 	CTime   Time            `db:"ctime"   json:"ctime"`
 	Score   int             `db:"score"   json:"score" hasOne:"user_score:uid"`
-	Score2  int             `db:"score2"   json:"score2" hasOne:"user_score:uid"`
+	Score2  int             `db:"score2"  json:"score2" hasOne:"user_score:uid"`
+	Logs    []*Log          `json:"logs" hasMany:"user_log:uid"`
 }
 
 func (u User) Table() string {
@@ -26,6 +27,10 @@ func (u User) FakeDeleteKey() string {
 
 type Profile struct {
 	Hobby string `json:"hobby"`
+}
+
+type Log struct {
+	Message string `db:"message" json:"message"`
 }
 
 var dsn = "root@tcp(127.0.0.1:3306)/ggm_test?&parseTime=true"

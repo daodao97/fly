@@ -2,17 +2,20 @@ package ggm
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 )
 
 type hasOpts struct {
-	Conn       string
-	DB         string
-	Table      string
-	LocalKey   string
-	ForeignKey string
-	OtherKeys  []string
+	Conn        string
+	DB          string
+	Table       string
+	LocalKey    string
+	ForeignKey  string
+	OtherKeys   []string
+	RefType     reflect.Type
+	StructField string
 }
 
 // [pool.]db.table:[local_key->]foreign_key,other_key

@@ -64,7 +64,7 @@ func structFields[T any]() ([]string, error) {
 	return fields, nil
 }
 
-func merge[T any](a, b T) T {
+func merge(a, b any) any {
 	av := reflect.ValueOf(a)
 	bv := reflect.ValueOf(b)
 	for i := 0; i < bv.NumField(); i++ {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
+	dynamicstruct "github.com/ompluscator/dynamic-struct"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"reflect"
@@ -109,6 +110,11 @@ func (m *model[T]) Select(condition ...Option) ([]T, error) {
 	}
 
 	result, err = m.hasOneData(result)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err = m.hasManyData(result)
 	if err != nil {
 		return nil, err
 	}
@@ -341,6 +347,85 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 					}
 				}
 			}
+		}
+	}
+
+	return list, nil
+}
+
+type Container struct {
+}
+
+func (m model[T]) hasManyData(list []T) ([]T, error) {
+	for _, opt := range m.modelInfo.HasMany {
+		_db, exist := DB(opt.Conn)
+		if !exist {
+			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
+		}
+
+		var pkv []any
+		var rc []reflectValueCache
+		for _, a := range list {
+			av := reflect.Indirect(reflect.ValueOf(a))
+			f, err := m.getStructFieldNameByTagName(opt.LocalKey)
+			if err != nil {
+				return nil, err
+			}
+			pk := av.FieldByName(f)
+			pkv = append(pkv, pk.Interface())
+			rc = append(rc, reflectValueCache{
+				Value:   av,
+				Pk:      f,
+				PkValue: pk,
+			})
+		}
+
+		if len(pkv) == 0 {
+			return nil, errors.New("hasMany pk value is empty")
+		}
+
+		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+"my_id")
+		_sql, args := SelectBuilder(Field(fields...), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
+
+		rows, err := _db.Queryx(_sql, args...)
+		if err != nil {
+			return nil, err
+		}
+
+		ty := reflectx.Deref(opt.RefType.Elem())
+
+		source := reflect.New(ty).Interface()
+		builder := dynamicstruct.ExtendStruct(source).AddField("MyId", 0, `db:"my_id"`)
+
+		var result []any
+		for rows.Next() {
+			_result := builder.Build().New()
+			err := rows.StructScan(_result)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, _result)
+		}
+
+		for _, av := range rc {
+			var tmp []reflect.Value
+			for _, b := range result {
+				bv := reflect.Indirect(reflect.ValueOf(b))
+				fk := bv.FieldByName("MyId")
+				if av.PkValue.Interface() == fk.Interface() {
+					hasM := reflect.New(ty)
+					for i := 0; i < ty.NumField(); i++ {
+						f := ty.Field(i)
+						reflect.Indirect(hasM).FieldByName(f.Name).Set(bv.FieldByName(f.Name))
+					}
+					tmp = append(tmp, hasM)
+				}
+			}
+			arr := reflect.MakeSlice(opt.RefType, 0, len(tmp))
+			for _, v := range tmp {
+				arr = reflect.Append(arr, v)
+			}
+			av.Value.FieldByName(opt.StructField).Set(arr)
 		}
 	}
 
