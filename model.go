@@ -14,12 +14,6 @@ import (
 
 var tableNameNotDefine = errors.New("table name is not define")
 
-type field struct {
-	Name         string
-	IsPrimaryKey bool
-	Validate     string
-}
-
 type TableName interface {
 	Table() string
 }
@@ -353,9 +347,6 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 	return list, nil
 }
 
-type Container struct {
-}
-
 func (m model[T]) hasManyData(list []T) ([]T, error) {
 	for _, opt := range m.modelInfo.HasMany {
 		_db, exist := DB(opt.Conn)
@@ -393,7 +384,6 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 		}
 
 		ty := reflectx.Deref(opt.RefType.Elem())
-
 		source := reflect.New(ty).Interface()
 		builder := dynamicstruct.ExtendStruct(source).AddField("MyId", 0, `db:"my_id"`)
 
@@ -406,6 +396,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 			}
 			result = append(result, _result)
 		}
+		_ = rows.Close()
 
 		for _, av := range rc {
 			var tmp []reflect.Value
