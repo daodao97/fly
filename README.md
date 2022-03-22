@@ -211,3 +211,44 @@ type DataType[T any] interface {
 	Get() T
 }
 ```
+
+### Linked data
+
+#### hasOne
+
+`one to one`
+
+```go
+type User struct {
+	Id      int             `db:"id,pk"   json:"id"`
+	Name    string          `db:"name"    json:"name"`
+	Profile *Json[*Profile] `db:"profile" json:"profile"`
+	Score   int             `db:"score"   json:"score" hasOne:"user_score:uid"`
+	Score2  int             `db:"score2"  json:"score2" hasOne:"user_score:uid"`
+}
+```
+
+#### hasMany
+
+`one to N`
+
+```go
+type User struct {
+	Id      int             `db:"id,pk"   json:"id"`
+	Name    string          `db:"name"    json:"name"`
+	Profile *Json[*Profile] `db:"profile" json:"profile"`
+	Logs    []*Log          `json:"logs"  hasMany:"user_log:uid"`
+}
+
+type Log struct {
+	Message string `db:"message" json:"message"`
+}
+```
+
+hasOne or hasMany tag token:
+
+`[conn.][database.]table:[local_key->]foreign_key`
+
+`m.Select()` will auto query the linked data into the struct.
+
+Check [model_test.go](./model_test.go) for detail.

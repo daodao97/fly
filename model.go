@@ -328,7 +328,7 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 		}
 
 		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+opt.LocalKey)
-		_sql, args := SelectBuilder(Field(fields...), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
+		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
 
 		var _result []T
 		err := _db.Select(&_result, _sql, args...)
@@ -385,7 +385,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 		}
 
 		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+"my_id")
-		_sql, args := SelectBuilder(Field(fields...), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
+		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
 
 		rows, err := _db.Queryx(_sql, args...)
 		if err != nil {

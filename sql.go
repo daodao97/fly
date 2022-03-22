@@ -20,14 +20,15 @@ type Option interface {
 }
 
 type Options struct {
-	table   string
-	field   []string
-	where   []where
-	orderBy string
-	groupBy string
-	limit   int
-	offset  int
-	value   []any
+	database string
+	table    string
+	field    []string
+	where    []where
+	orderBy  string
+	groupBy  string
+	limit    int
+	offset   int
+	value    []any
 }
 
 type table string
@@ -38,6 +39,17 @@ func (t *table) apply(opts *Options) {
 
 func Table(name string) Option {
 	t := table(name)
+	return &t
+}
+
+type database string
+
+func (t *database) apply(opts *Options) {
+	opts.database = string(*t)
+}
+
+func Database(name string) Option {
+	t := database(name)
 	return &t
 }
 
@@ -446,6 +458,13 @@ func SelectBuilder(opts ...Option) (sql string, args []any) {
 	return sql, args
 }
 
+func getTable(opt *Options) string {
+	if opt.database == "" {
+		return opt.table
+	}
+	return opt.database + "." + opt.table
+}
+
 func InsertBuilder(opts ...Option) (sql string, args []any) {
 	_opts := &Options{}
 	for _, v := range opts {
@@ -455,7 +474,7 @@ func InsertBuilder(opts ...Option) (sql string, args []any) {
 	for range _opts.field {
 		_val = append(_val, "?")
 	}
-	sql = fmt.Sprintf(insertMod, _opts.table, strings.Join(_opts.field, ", "), strings.Join(_val, ","))
+	sql = fmt.Sprintf(insertMod, getTable(_opts), strings.Join(_opts.field, ", "), strings.Join(_val, ","))
 	args = _opts.value
 	return sql, args
 }
@@ -469,7 +488,7 @@ func InsertNamedBuilder(opts ...Option) (sql string) {
 	for _, k := range _opts.field {
 		_val = append(_val, ":"+strings.ReplaceAll(k, "`", ""))
 	}
-	return fmt.Sprintf(insertMod, _opts.table, strings.Join(_opts.field, ", "), strings.Join(_val, ", "))
+	return fmt.Sprintf(insertMod, getTable(_opts), strings.Join(_opts.field, ", "), strings.Join(_val, ", "))
 }
 
 func UpdateBuilder(opts ...Option) (sql string, args []any) {
@@ -481,7 +500,7 @@ func UpdateBuilder(opts ...Option) (sql string, args []any) {
 	for _, v := range _opts.field {
 		_val = append(_val, v+" = ?")
 	}
-	sql = fmt.Sprintf(updateMod, _opts.table, strings.Join(_val, ","))
+	sql = fmt.Sprintf(updateMod, getTable(_opts), strings.Join(_val, ","))
 	args = _opts.value
 	if len(_opts.where) > 0 {
 		_where, _args := whereBuilder(_opts.where)

@@ -1,5 +1,35 @@
 package ggm
 
+/*
+
+CREATE TABLE `user` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `status` tinyint(4) NOT NULL DEFAULT '0',
+  `profile` varchar(200) NOT NULL, -- json string
+  `is_deleted` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  `ctime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `mtime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `user_score` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `uid` int(11) unsigned NOT NULL, -- user id
+  `score` int(11) unsigned NOT NULL DEFAULT '0',
+  `score2` int(11) unsigned DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `user_log` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `uid` int(11) unsigned NOT NULL DEFAULT '0', -- user id
+  `message` varchar(50) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+*/
+
 import (
 	"encoding/json"
 	"fmt"
