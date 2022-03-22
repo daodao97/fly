@@ -16,99 +16,198 @@ go get github.com/daodao97/ggm
 
 Below is an example which shows some common use cases for ggm. Check [model_test.go](./model_test.go) for more usage.
 
+### init db
+
+We can initialize some db resources commonly used by programs, like this
+
 ```go
-package main
+// map[conn_name]db_config
+ggm.Init(map[string]*ggm.Config{
+    "default": {
+        DSN: "root@tcp(127.0.0.1:3306)/ggm_test?&parseTime=true",
+    },
+})
+```
 
-import (
-	"encoding/json"
-	"fmt"
-	"log"
+Of course, we can also instantiate some temporary DB resources, like this
 
-	"github.com/daodao97/ggm"
-)
+```go
+m := ggm.NewConn(&ggm.Config{
+	DSN: "root@tcp(127.0.0.1:3306)/ggm_test?&parseTime=true" 
+})
+```
 
-func init() {
-	err := ggm.Init(map[string]*ggm.Config{
-		"default": {
-			DSN: "root@tcp(127.0.0.1:3306)/ggm_test?&parseTime=true",
-		},
-	})
+### data model
 
-	if err != nil {
-		panic(err)
-	}
-}
+For example, we have a table with the following structure
 
-func main() {
-	m := ggm.New[*User]()
+```sql
+CREATE TABLE `user` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `status` tinyint(4) NOT NULL DEFAULT '0',
+  `profile` varchar(200) NOT NULL,
+  `is_deleted` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  `ctime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `mtime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
 
-	user1 := &User{
-		Name: "Seiya",
-		Profile: ggm.NewJson(&Profile{
-			Skill: "Pegasus Ryuseiken",
-		}),
-	}
+#### struct define
+The structure model for this table is
 
-	user2 := &User{
-		Name: "Shun",
-		Profile: ggm.NewJson(&Profile{
-			Skill: "Nebula Chain",
-		}),
-	}
-
-	_, err := m.Insert(user1, user2)
-	if err != nil {
-		log.Fatalln("Insert err", err)
-		return
-	}
-
-	list, err := m.Select(ggm.WhereEq("id", 1))
-	if err != nil {
-		log.Fatalln("Select err", err)
-		return
-	}
-
-	listJson, _ := json.Marshal(list)
-	fmt.Printf("user list: %+v", string(listJson))
-
-	user1.Id = 1
-	user1.Name = "Seiya!"
-	_, err = m.Update(user1)
-	if err != nil {
-		log.Fatalln("Update 1 err", err)
-		return
-	}
-
-	user2.Name = "Shun!"
-	_, err = m.Update(user2, ggm.WhereEq("name", "Shun"))
-	if err != nil {
-		log.Fatalln("Update2 err", err)
-		return
-	}
-
-	_, err = m.Delete(ggm.WhereEq("id", 1))
-	if err != nil {
-		log.Fatalln("Delete err", err)
-		return
-	}
-}
-
+```go
 type User struct {
-	Id      int                 `db:"id,pk"   json:"id"`
-	Name    string              `db:"name"    json:"name"`
-	Profile *ggm.Json[*Profile] `db:"profile" json:"profile"`
+	Id      int             `db:"id,pk"   json:"id"`
+	Name    string          `db:"name"    json:"name"`
+	Profile string          `db:"profile" json:"profile"`
+	CTime   time.Time       `db:"ctime"   json:"ctime"`
 }
 
 func (u User) Table() string {
 	return "user"
 }
 
+```
+
+`interface: Table() string` the struct must implement.
+
+struct field must have `db` tag, value is db field name.
+
+#### set conn
+
+If you are using a db resource that is not the `default`
+
+```go
+func (u User) Conn() string {
+	return "conn_name"
+}
+```
+
+#### fake delete
+
+If you have a field to mark fake delete
+
+```go
 func (u User) FakeDeleteKey() string {
 	return "is_deleted"
 }
+```
 
-type Profile struct {
-	Skill string `json:"skill"`
+then, the `delete sql` will converted to `update ${fakeDeleteKey} = 1` when we delete data
+
+### select
+
+```go
+m := ggm.New[*User]() // or ggm.New[User]() 
+
+m.Select(ggm.WhereEq("id", 1))
+```
+
+detail fo `where condition` see [where condition](/#/where+condition)
+
+### insert
+
+```go
+user := &User{Name: "Seiya"}
+
+// single insert
+m.Insert(user)
+
+// batch insert
+m.Insert(user, user2, ...)
+```
+
+### update
+
+#### use primary key update
+
+```go
+user := &User{Id: 1, Name: "Seiya!!!"}
+m.Update(user)
+```
+
+#### with where condition
+
+```go
+user := &User{Name: "Seiya!!!"}
+m.Update(user, ggm.WhereEq("id", 1))
+```
+
+### delete
+
+```go
+m.Delete(ggm.WhereEq("id", 1))
+```
+
+### where condition
+
+```go
+m.Select(
+    WhereEq("id", 1),
+    WhereGt("age", 20),
+    WhereLike("name", "dd"),
+    WhereGroup(
+        WhereEq("sex", 1),
+        WhereOrEq("class", 2),
+        WhereGroup(
+            WhereEq("sex1", 1),
+            WhereEq("class2", 2),
+        ),
+    ),
+    OrderBy("id", DESC),
+)
+```
+
+more example, place checkout [sql_test.go](/sql_test.go)
+
+### data type
+
+#### Json
+
+If the value of field `user.profile` is `json_string` like `{"kill":"Pegasus Ryuseiken"}`
+
+```go
+type User struct {
+	Id      int                 `db:"id,pk"   json:"id"`
+	Name    string              `db:"name"    json:"name"`
+	Profile *ggm.Json[*Profile] `db:"profile" json:"profile"`
+	CTime   time.Time           `db:"ctime"   json:"ctime"`
 }
 
+type Profile struct {
+    Skill string `json:"skill"`
+}
+```
+
+Data can be automatically converted into struct for use by programs.
+
+#### Time
+
+```go
+type User struct {
+	Id      int                 `db:"id,pk"   json:"id"`
+	Name    string              `db:"name"    json:"name"`
+	Profile *ggm.Json[*Profile] `db:"profile" json:"profile"`
+	CTime   ggm.Time            `db:"ctime"   json:"ctime"`
+}
+```
+
+when api response or json.Marshal
+
+ctime : `2022-03-19T11:52:19Z` => `2022-03-19 11:52:19`
+
+#### define yourself data type
+
+Implement the following interfaces
+
+```go
+type DataType[T any] interface {
+	Value() (driver.Value, error)
+	Scan(value any) error
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON(b []byte) error
+	Get() T
+}
 ```

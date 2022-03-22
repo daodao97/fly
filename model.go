@@ -14,6 +14,10 @@ import (
 
 var tableNameNotDefine = errors.New("table name is not define")
 
+type ConnName interface {
+	Conn() string
+}
+
 type TableName interface {
 	Table() string
 }
@@ -24,7 +28,6 @@ type FakeDeleteKey interface {
 
 func New[T TableName]() *model[T] {
 	m := &model[T]{}
-	m.Conn("default")
 
 	t := reflectNew[T]()
 	m.table = t.(TableName).Table()
@@ -35,6 +38,12 @@ func New[T TableName]() *model[T] {
 	if fd, ok := t.(FakeDeleteKey); ok {
 		m.fakeDeleteKey = fd.FakeDeleteKey()
 	}
+
+	conn := "default"
+	if connName, ok := t.(ConnName); ok {
+		conn = connName.Conn()
+	}
+	m.conn(conn)
 
 	info, err := structInfo[T]()
 	if err != nil {
@@ -76,7 +85,7 @@ func (m *model[T]) check() error {
 	return nil
 }
 
-func (m *model[T]) Conn(name string) *model[T] {
+func (m *model[T]) conn(name string) *model[T] {
 	client, exist := DB(name)
 	m.client = client
 	if !exist {

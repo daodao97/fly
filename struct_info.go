@@ -1,7 +1,6 @@
 package ggm
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
@@ -115,9 +114,6 @@ func getModelInfo(t reflect.Type) (*modelInfo, error) {
 			}
 			m.HasOne = append(m.HasOne, hasOneOpt)
 		}
-
-		fmt.Println(tagHasMany)
-
 	}
 	m.HasOne = uniqueHas(m.HasOne)
 	m.HasMany = uniqueHas(m.HasMany)

@@ -14,7 +14,7 @@ type User struct {
 	CTime   Time            `db:"ctime"   json:"ctime"`
 	Score   int             `db:"score"   json:"score" hasOne:"user_score:uid"`
 	Score2  int             `db:"score2"  json:"score2" hasOne:"user_score:uid"`
-	Logs    []*Log          `json:"logs" hasMany:"user_log:uid"`
+	Logs    []*Log          `json:"logs"  hasMany:"user_log:uid"`
 }
 
 func (u User) Table() string {
@@ -51,6 +51,7 @@ func mysqlConf() *Config {
 }
 
 func TestModel_InsertSingle(t *testing.T) {
+
 	// T is ptr struct
 	m := New[*User]()
 
