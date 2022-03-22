@@ -105,7 +105,7 @@ m := ggm.New[*User]() // or ggm.New[User]()
 m.Select(ggm.WhereEq("id", 1))
 ```
 
-detail fo `where condition` see [where condition](/#/where-condition)
+detail fo `where condition` see [where condition](https://github.com/daodao97/ggm#where-condition)
 
 ### insert
 
