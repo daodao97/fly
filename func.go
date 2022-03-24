@@ -1,9 +1,12 @@
 package ggm
 
 import (
+	"fmt"
+	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -19,8 +22,38 @@ func InArr[T comparable](arr []T, el T) bool {
 	return lo.IndexOf(arr, el) > 0
 }
 
-func Remove[T any](slice []T, s int) []T {
-	return append(slice[:s], slice[s+1:]...)
+func Remove[T any](arr []T, s int) []T {
+	return append(arr[:s], arr[s+1:]...)
+}
+
+func Join[T int | string](arr []T) string {
+	var tmp []string
+	for _, v := range arr {
+		tmp = append(tmp, fmt.Sprintf("%v", v))
+	}
+	return strings.Join(tmp, ",")
+}
+
+func Split[T int | string](str string) []T {
+	parts := strings.Split(str, ",")
+	var tmp []T
+	rt := reflectx.Deref(reflect.TypeOf(new(T)))
+
+	for _, v := range parts {
+		_v := new(T)
+		el := reflect.ValueOf(_v).Elem()
+
+		switch rt.Kind() {
+		case reflect.Int:
+			t, _ := strconv.Atoi(v)
+			el.SetInt(int64(t))
+		case reflect.String:
+			el.SetString(v)
+		}
+		tmp = append(tmp, *_v)
+	}
+
+	return tmp
 }
 
 func filterEmptyStr(arr []string) []string {

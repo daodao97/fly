@@ -38,13 +38,14 @@ import (
 )
 
 type User struct {
-	Id      int             `db:"id,pk"   json:"id"`
-	Name    string          `db:"name"    json:"name"`
-	Profile *Json[*Profile] `db:"profile" json:"profile"`
-	CTime   Time            `db:"ctime"   json:"ctime"`
-	Score   int             `db:"score"   json:"score" hasOne:"user_score:uid"`
-	Score2  int             `db:"score2"  json:"score2" hasOne:"user_score:uid"`
-	Logs    []*Log          `json:"logs"  hasMany:"user_log:uid"`
+	Id      int              `db:"id,pk"   json:"id"`
+	Name    string           `db:"name"    json:"name"`
+	Profile *Json[*Profile]  `db:"profile" json:"profile"`
+	RoleIds *CommaSlice[int] `db:"role_ids" json:"role_ids"`
+	CTime   Time             `db:"ctime"   json:"ctime"`
+	Score   int              `db:"score"   json:"score" hasOne:"user_score:uid"`
+	Score2  int              `db:"score2"  json:"score2" hasOne:"user_score:uid"`
+	Logs    []*Log           `json:"logs"  hasMany:"user_log:uid"`
 }
 
 func (u User) Table() string {
@@ -134,7 +135,7 @@ func TestModel_InsertMulti(t *testing.T) {
 
 func TestModel_Select(t *testing.T) {
 	m := New[*User]()
-	list, err := m.Select()
+	list, err := m.Select(Where("id", "<", 5))
 	assert.Equal(t, nil, err)
 	jsonStr, err := json.Marshal(list)
 	assert.Equal(t, nil, err)

@@ -8,12 +8,14 @@ import (
 	"time"
 )
 
-type DataType[T any] interface {
-	Value() (driver.Value, error)
-	Scan(value any) error
-	MarshalJSON() ([]byte, error)
-	UnmarshalJSON(b []byte) error
-	Get() T
+type DataTypeDB[T any] interface {
+	Value() (driver.Value, error) // Variables in a program to db value
+	Scan(value any) error         // db value scan to program var
+}
+
+type DataTypeJson[T any] interface {
+	MarshalJSON() ([]byte, error) // var to json string
+	UnmarshalJSON(b []byte) error // json string to var
 }
 
 // NewJson struct <==> json_str
@@ -100,4 +102,35 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 
 func (t *Time) Get() *time.Time {
 	return (*time.Time)(t)
+}
+
+type CommaSlice[T int | string] []T
+
+func (t CommaSlice[T]) Value() (driver.Value, error) {
+	return Join(t), nil
+}
+
+func (t *CommaSlice[T]) Scan(value any) error {
+	*t = []T{}
+	if value == nil {
+		return nil
+	}
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+	}
+	v := string(bytes)
+	if v != "" {
+		*t = Split[T](v)
+	}
+	return nil
+}
+
+func (t *CommaSlice[T]) Get() []T {
+	return *t
 }

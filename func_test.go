@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -49,4 +50,10 @@ func Test_reflectNew(t *testing.T) {
 
 	re1 := reflectNew[*User]()
 	fmt.Println(re1.(TableName).Table())
+}
+
+func TestSplit(t *testing.T) {
+	res := Split[string]("1,2,3")
+	res1 := Split[int]("1,2,3")
+	spew.Dump(res, res1)
 }

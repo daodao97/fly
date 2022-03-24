@@ -97,6 +97,8 @@ func (u User) FakeDeleteKey() string {
 
 then, the `delete sql` will converted to `update ${fakeDeleteKey} = 1` when we delete data
 
+`select sql` will auto add `${fackDeleteKey} = 0`, to filter deleted data.
+
 ### select
 
 ```go
@@ -105,7 +107,7 @@ m := ggm.New[*User]() // or ggm.New[User]()
 m.Select(ggm.WhereEq("id", 1))
 ```
 
-detail fo `where condition` see [where condition](https://github.com/daodao97/ggm#where-condition)
+detail of `where condition` see [where condition](https://github.com/daodao97/ggm#where-condition)
 
 ### insert
 
@@ -160,13 +162,13 @@ m.Select(
 )
 ```
 
-more example, place checkout [sql_test.go](/sql_test.go)
+more example, checkout [sql_test.go](/sql_test.go)
 
 ### data type
 
 #### Json
 
-If the value of field `user.profile` is `json_string` like `{"kill":"Pegasus Ryuseiken"}`
+If the value of field `user.profile` is `json_string` like `{"skill":"Pegasus Ryuseiken"}`
 
 ```go
 type User struct {
@@ -180,6 +182,8 @@ type Profile struct {
     Skill string `json:"skill"`
 }
 ```
+
+`Profile{Skill: "xxx"}`  <==> '{"skill":"xxx"}'
 
 Data can be automatically converted into struct for use by programs.
 
