@@ -358,6 +358,23 @@ func WhereBetween(field string, value any) Option {
 	}
 }
 
+func WhereFindInSet(field string, value any) Option {
+	return &where{
+		field:    field,
+		operator: "find_in_set",
+		value:    value,
+	}
+}
+
+func WhereOrFindInSet(field string, value any) Option {
+	return &where{
+		field:    field,
+		operator: "find_in_set",
+		value:    value,
+		logic:    "or",
+	}
+}
+
 type orderBy string
 
 func (t *orderBy) apply(opts *Options) {
@@ -408,6 +425,9 @@ func whereBuilder(condition []where) (sql string, args []any) {
 				val := v.value.([]any)
 				tokens = append(tokens, fmt.Sprintf("`%s` %s ? and ?", v.field, v.operator))
 				args = append(args, val...)
+			case "find_in_set":
+				tokens = append(tokens, fmt.Sprintf("find_in_set(%s, ?)", v.field))
+				args = append(args, v.value)
 			default:
 				tokens = append(tokens, fmt.Sprintf("`%s` %s ?", v.field, v.operator))
 				args = append(args, v.value)

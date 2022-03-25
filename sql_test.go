@@ -15,11 +15,12 @@ func TestSelectBuilder(t *testing.T) {
 		WhereGroup(
 			WhereEq("sex", 1),
 			WhereOrEq("class", 2),
-			WhereGroup(
+			WhereOrGroup(
 				WhereEq("sex1", 1),
 				WhereEq("class2", 2),
 			),
 		),
+		WhereFindInSet("role", 3),
 		OrderBy("id", DESC),
 	)
 

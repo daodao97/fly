@@ -207,13 +207,15 @@ ctime : `2022-03-19T11:52:19Z` => `2022-03-19 11:52:19`
 Implement the following interfaces
 
 ```go
-type DataType[T any] interface {
-	Value() (driver.Value, error)
-	Scan(value any) error
-	MarshalJSON() ([]byte, error)
-	UnmarshalJSON(b []byte) error
-	Get() T
+type DataTypeDB[T any] interface {
+	Value() (driver.Value, error) // var in program to db value 
+	Scan(value any) error         // db value scan to program var
 }
+
+type DataTypeJson[T any] interface {
+	MarshalJSON() ([]byte, error) // var to json string 
+	UnmarshalJSON(b []byte) error // json string to var
+}}
 ```
 
 ### Linked data
@@ -227,7 +229,7 @@ type User struct {
 	Id      int             `db:"id,pk"   json:"id"`
 	Name    string          `db:"name"    json:"name"`
 	Profile *Json[*Profile] `db:"profile" json:"profile"`
-	Score   int             `db:"score"   json:"score" hasOne:"user_score:uid"`
+	Score   int             `db:"score"   json:"score"  hasOne:"user_score:uid"`
 	Score2  int             `db:"score2"  json:"score2" hasOne:"user_score:uid"`
 }
 ```
