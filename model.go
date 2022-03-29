@@ -104,6 +104,9 @@ func (m *model[T]) Select(condition ...Option) ([]T, error) {
 		return nil, err
 	}
 	condition = append(condition, Table(m.table), Field(fields...))
+	if m.fakeDeleteKey != "" {
+		condition = append(condition, WhereEq(m.fakeDeleteKey, 0))
+	}
 	_sql, args := SelectBuilder(condition...)
 
 	var result []T

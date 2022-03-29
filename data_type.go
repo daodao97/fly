@@ -122,7 +122,7 @@ func (t *CommaSlice[T]) Scan(value any) error {
 	case string:
 		bytes = []byte(v)
 	default:
-		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+		return errors.New(fmt.Sprint("Failed to convert CommaSlice value:", value))
 	}
 	v := string(bytes)
 	if v != "" {
