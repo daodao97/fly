@@ -53,6 +53,29 @@ func New[T TableName]() *Model[T] {
 	return m
 }
 
+func NewClient[T TableName](conn string) *Model[T] {
+	m := &Model[T]{}
+
+	t := reflectNew[T]()
+	m.table = t.(TableName).Table()
+	if m.table == "" {
+		m.err = tableNameNotDefine
+	}
+
+	if fd, ok := t.(FakeDeleteKey); ok {
+		m.fakeDeleteKey = fd.FakeDeleteKey()
+	}
+
+	m.conn(conn)
+
+	info, err := structInfo[T]()
+	if err != nil {
+		m.err = err
+	}
+	m.modelInfo = info
+	return m
+}
+
 func NewConn[T TableName](c *Config) *Model[T] {
 	m := New[T]()
 	client, err := newDb(c)
