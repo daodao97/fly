@@ -26,8 +26,8 @@ type FakeDeleteKey interface {
 	FakeDeleteKey() string
 }
 
-func New[T TableName]() *model[T] {
-	m := &model[T]{}
+func New[T TableName]() *Model[T] {
+	m := &Model[T]{}
 
 	t := reflectNew[T]()
 	m.table = t.(TableName).Table()
@@ -53,7 +53,7 @@ func New[T TableName]() *model[T] {
 	return m
 }
 
-func NewConn[T TableName](c *Config) *model[T] {
+func NewConn[T TableName](c *Config) *Model[T] {
 	m := New[T]()
 	client, err := newDb(c)
 	m.client = client
@@ -63,7 +63,7 @@ func NewConn[T TableName](c *Config) *model[T] {
 	return m
 }
 
-type model[T TableName] struct {
+type Model[T TableName] struct {
 	client        *sqlx.DB
 	err           error
 	table         string
@@ -71,11 +71,11 @@ type model[T TableName] struct {
 	modelInfo     *modelInfo
 }
 
-func (m *model[T]) GetDB() *sqlx.DB {
+func (m *Model[T]) GetDB() *sqlx.DB {
 	return m.client
 }
 
-func (m *model[T]) check() error {
+func (m *Model[T]) check() error {
 	if m.err != nil {
 		return m.err
 	}
@@ -85,7 +85,7 @@ func (m *model[T]) check() error {
 	return nil
 }
 
-func (m *model[T]) conn(name string) *model[T] {
+func (m *Model[T]) conn(name string) *Model[T] {
 	client, exist := DB(name)
 	m.client = client
 	if !exist {
@@ -94,7 +94,7 @@ func (m *model[T]) conn(name string) *model[T] {
 	return m
 }
 
-func (m *model[T]) Select(condition ...Option) ([]T, error) {
+func (m *Model[T]) Select(condition ...Option) ([]T, error) {
 	if err := m.check(); err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (m *model[T]) Select(condition ...Option) ([]T, error) {
 	return result, nil
 }
 
-func (m *model[T]) SelectOne(condition ...Option) (row T, err error) {
+func (m *Model[T]) SelectOne(condition ...Option) (row T, err error) {
 	condition = append(condition, Limit(1), Offset(0))
 	result, err := m.Select(condition...)
 	if err != nil {
@@ -140,7 +140,7 @@ func (m *model[T]) SelectOne(condition ...Option) (row T, err error) {
 	return result[0], nil
 }
 
-func (m *model[T]) Count(condition ...Option) (int, error) {
+func (m *Model[T]) Count(condition ...Option) (int, error) {
 	if err := m.check(); err != nil {
 		return 0, err
 	}
@@ -163,7 +163,7 @@ func (m *model[T]) Count(condition ...Option) (int, error) {
 	return result.Count, nil
 }
 
-func (m *model[T]) Insert(rows ...T) (int64, error) {
+func (m *Model[T]) Insert(rows ...T) (int64, error) {
 	if err := m.check(); err != nil {
 		return 0, err
 	}
@@ -191,7 +191,7 @@ func (m *model[T]) Insert(rows ...T) (int64, error) {
 	return insertID, nil
 }
 
-func (m *model[T]) Update(row T, opt ...Option) (int64, error) {
+func (m *Model[T]) Update(row T, opt ...Option) (int64, error) {
 	if err := m.check(); err != nil {
 		return 0, err
 	}
@@ -238,7 +238,7 @@ func (m *model[T]) Update(row T, opt ...Option) (int64, error) {
 	return affectedRows, nil
 }
 
-func (m *model[T]) Delete(opt ...Option) (bool, error) {
+func (m *Model[T]) Delete(opt ...Option) (bool, error) {
 	if len(opt) == 0 {
 		return false, errors.New("delete condition is empty")
 	}
@@ -266,22 +266,22 @@ func (m *model[T]) Delete(opt ...Option) (bool, error) {
 	return affectedRows > 0, nil
 }
 
-func (m *model[T]) Exec(sql string, args ...any) (sql.Result, error) {
+func (m *Model[T]) Exec(sql string, args ...any) (sql.Result, error) {
 	return m.client.Exec(sql, args...)
 }
 
-func (m *model[T]) tFields() (fields []string, err error) {
+func (m *Model[T]) tFields() (fields []string, err error) {
 	for _, f := range m.modelInfo.Fields {
 		fields = append(fields, f.Name)
 	}
 	return fields, nil
 }
 
-func (m *model[T]) pk() string {
+func (m *Model[T]) pk() string {
 	return m.modelInfo.PrimaryKey
 }
 
-func (m *model[T]) tFieldValue(t T) (field []string, value []any, err error) {
+func (m *Model[T]) tFieldValue(t T) (field []string, value []any, err error) {
 	rm := reflectx.NewMapper("db")
 	fm := rm.FieldMap(reflect.ValueOf(t))
 
@@ -302,7 +302,7 @@ type reflectValueCache struct {
 	PkValue reflect.Value
 }
 
-func (m model[T]) hasOneData(list []T) ([]T, error) {
+func (m Model[T]) hasOneData(list []T) ([]T, error) {
 	for _, opt := range m.modelInfo.HasOne {
 		_db, exist := DB(opt.Conn)
 		if !exist {
@@ -359,7 +359,7 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 	return list, nil
 }
 
-func (m model[T]) hasManyData(list []T) ([]T, error) {
+func (m Model[T]) hasManyData(list []T) ([]T, error) {
 	for _, opt := range m.modelInfo.HasMany {
 		_db, exist := DB(opt.Conn)
 		if !exist {
@@ -435,7 +435,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 	return list, nil
 }
 
-func (m model[T]) getStructFieldNameByTagName(name string) (string, error) {
+func (m Model[T]) getStructFieldNameByTagName(name string) (string, error) {
 	for _, v := range m.modelInfo.Fields {
 		if v.Name == name {
 			return v.Field, nil
