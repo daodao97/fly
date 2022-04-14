@@ -43,7 +43,7 @@ func New[T TableName]() *Model[T] {
 	if connName, ok := t.(ConnName); ok {
 		conn = connName.Conn()
 	}
-	m.conn(conn)
+	m.SetDB(conn)
 
 	info, err := structInfo[T]()
 	if err != nil {
@@ -66,7 +66,7 @@ func NewClient[T TableName](conn string) *Model[T] {
 		m.fakeDeleteKey = fd.FakeDeleteKey()
 	}
 
-	m.conn(conn)
+	m.SetDB(conn)
 
 	info, err := structInfo[T]()
 	if err != nil {
@@ -108,7 +108,7 @@ func (m *Model[T]) check() error {
 	return nil
 }
 
-func (m *Model[T]) conn(name string) *Model[T] {
+func (m *Model[T]) SetDB(name string) *Model[T] {
 	client, exist := DB(name)
 	m.client = client
 	if !exist {
