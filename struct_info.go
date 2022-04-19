@@ -7,6 +7,7 @@ import (
 )
 
 type modelInfo struct {
+	Name                  string
 	PrimaryKey            string
 	PrimaryKeyStructField string
 	Fields                []*dbFields
@@ -43,6 +44,7 @@ func getModelInfo(t reflect.Type) (*modelInfo, error) {
 		return nil, errors.New("generic type T must be a struct")
 	}
 	m := &modelInfo{
+		Name:        t.Name(),
 		Fields:      []*dbFields{},
 		OtherFields: []*dbFields{},
 		HasOne:      []*hasOpts{},

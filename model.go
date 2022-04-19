@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
-	dynamicstruct "github.com/ompluscator/dynamic-struct"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 	"reflect"
 	"strings"
 )
 
-var tableNameNotDefine = errors.New("table name is not define")
+var ErrTableNameNotDefine = errors.New("table name is not define")
+var ErrNilRow = errors.New("select row is nil")
+var ErrPrimaryKeyNotDefined = errors.New("pk is not defined")
 
 type ConnName interface {
 	Conn() string
@@ -32,7 +33,7 @@ func New[T TableName]() *model[T] {
 	t := reflectNew[T]()
 	m.table = t.(TableName).Table()
 	if m.table == "" {
-		m.err = tableNameNotDefine
+		m.err = ErrTableNameNotDefine
 	}
 
 	if fd, ok := t.(FakeDeleteKey); ok {
@@ -71,7 +72,7 @@ type model[T TableName] struct {
 	modelInfo     *modelInfo
 }
 
-func (m *model[T]) GetDB() *sqlx.DB {
+func (m *model[T]) DB() *sqlx.DB {
 	return m.client
 }
 
@@ -115,6 +116,10 @@ func (m *model[T]) Select(condition ...Option) ([]T, error) {
 		return nil, err
 	}
 
+	if len(result) == 0 {
+		return result, nil
+	}
+
 	result, err = m.hasOneData(result)
 	if err != nil {
 		return nil, err
@@ -135,7 +140,7 @@ func (m *model[T]) SelectOne(condition ...Option) (row T, err error) {
 		return row, err
 	}
 	if Len(result) == 0 {
-		return row, fmt.Errorf("result is empty")
+		return row, ErrNilRow
 	}
 	return result[0], nil
 }
@@ -294,157 +299,4 @@ func (m *model[T]) tFieldValue(t T) (field []string, value []any, err error) {
 	}
 
 	return field, value, nil
-}
-
-type reflectValueCache struct {
-	Value   reflect.Value
-	Pk      string
-	PkValue reflect.Value
-}
-
-func (m model[T]) hasOneData(list []T) ([]T, error) {
-	for _, opt := range m.modelInfo.HasOne {
-		_db, exist := DB(opt.Conn)
-		if !exist {
-			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
-		}
-
-		var pkv []any
-		var rc []reflectValueCache
-		for _, a := range list {
-			av := reflect.Indirect(reflect.ValueOf(a))
-			f, err := m.getStructFieldNameByTagName(opt.LocalKey)
-			if err != nil {
-				return nil, err
-			}
-			pk := av.FieldByName(f)
-			pkv = append(pkv, pk.Interface())
-			rc = append(rc, reflectValueCache{
-				Value:   av,
-				Pk:      f,
-				PkValue: pk,
-			})
-		}
-
-		if len(pkv) == 0 {
-			return nil, errors.New("hasOne pk value is empty")
-		}
-
-		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+opt.LocalKey)
-		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
-
-		var _result []T
-		err := _db.Select(&_result, _sql, args...)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, av := range rc {
-			for _, b := range _result {
-				bv := reflect.Indirect(reflect.ValueOf(b))
-				fk := bv.FieldByName(av.Pk)
-				if av.PkValue.Interface() == fk.Interface() {
-					for _, k := range opt.OtherKeys {
-						_f, err := m.getStructFieldNameByTagName(k)
-						if err != nil {
-							return nil, err
-						}
-						av.Value.FieldByName(_f).Set(bv.FieldByName(_f))
-					}
-				}
-			}
-		}
-	}
-
-	return list, nil
-}
-
-func (m model[T]) hasManyData(list []T) ([]T, error) {
-	for _, opt := range m.modelInfo.HasMany {
-		_db, exist := DB(opt.Conn)
-		if !exist {
-			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
-		}
-
-		var pkv []any
-		var rc []reflectValueCache
-		for _, a := range list {
-			av := reflect.Indirect(reflect.ValueOf(a))
-			f, err := m.getStructFieldNameByTagName(opt.LocalKey)
-			if err != nil {
-				return nil, err
-			}
-			pk := av.FieldByName(f)
-			pkv = append(pkv, pk.Interface())
-			rc = append(rc, reflectValueCache{
-				Value:   av,
-				Pk:      f,
-				PkValue: pk,
-			})
-		}
-
-		if len(pkv) == 0 {
-			return nil, errors.New("hasMany pk value is empty")
-		}
-
-		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+"my_id")
-		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
-
-		rows, err := _db.Queryx(_sql, args...)
-		if err != nil {
-			return nil, err
-		}
-
-		ty := reflectx.Deref(opt.RefType.Elem())
-		source := reflect.New(ty).Interface()
-		builder := dynamicstruct.ExtendStruct(source).AddField("MyId", 0, `db:"my_id"`)
-
-		var result []any
-		for rows.Next() {
-			_result := builder.Build().New()
-			err := rows.StructScan(_result)
-			if err != nil {
-				return nil, err
-			}
-			result = append(result, _result)
-		}
-		_ = rows.Close()
-
-		for _, av := range rc {
-			var tmp []reflect.Value
-			for _, b := range result {
-				bv := reflect.Indirect(reflect.ValueOf(b))
-				fk := bv.FieldByName("MyId")
-				if av.PkValue.Interface() == fk.Interface() {
-					hasM := reflect.New(ty)
-					for i := 0; i < ty.NumField(); i++ {
-						f := ty.Field(i)
-						reflect.Indirect(hasM).FieldByName(f.Name).Set(bv.FieldByName(f.Name))
-					}
-					tmp = append(tmp, hasM)
-				}
-			}
-			arr := reflect.MakeSlice(opt.RefType, 0, len(tmp))
-			for _, v := range tmp {
-				arr = reflect.Append(arr, v)
-			}
-			av.Value.FieldByName(opt.StructField).Set(arr)
-		}
-	}
-
-	return list, nil
-}
-
-func (m model[T]) getStructFieldNameByTagName(name string) (string, error) {
-	for _, v := range m.modelInfo.Fields {
-		if v.Name == name {
-			return v.Field, nil
-		}
-	}
-	for _, v := range m.modelInfo.OtherFields {
-		if v.Name == name {
-			return v.Field, nil
-		}
-	}
-	return "", errors.New("not found db tag: " + name)
 }
