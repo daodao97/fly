@@ -426,7 +426,7 @@ func whereBuilder(condition []where) (sql string, args []any) {
 				tokens = append(tokens, fmt.Sprintf("`%s` %s ? and ?", v.field, v.operator))
 				args = append(args, val...)
 			case "find_in_set":
-				tokens = append(tokens, fmt.Sprintf("find_in_set(%s, ?)", v.field))
+				tokens = append(tokens, fmt.Sprintf("find_in_set(?, %s)", v.field))
 				args = append(args, v.value)
 			default:
 				tokens = append(tokens, fmt.Sprintf("`%s` %s ?", v.field, v.operator))
