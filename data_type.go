@@ -104,6 +104,11 @@ func (t *Time) Get() *time.Time {
 	return (*time.Time)(t)
 }
 
+func NewCommaSlice[T int | string](val ...T) *CommaSlice[T] {
+	var tmp CommaSlice[T] = val
+	return &tmp
+}
+
 type CommaSlice[T int | string] []T
 
 func (t CommaSlice[T]) Value() (driver.Value, error) {

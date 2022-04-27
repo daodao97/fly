@@ -42,7 +42,7 @@ type User struct {
 	Name    string           `db:"name"    json:"name"`
 	Profile *Json[*Profile]  `db:"profile" json:"profile"`
 	RoleIds *CommaSlice[int] `db:"role_ids" json:"role_ids"`
-	CTime   Time             `db:"ctime"   json:"ctime"`
+	CTime   Time             `db:"ctime,ii"   json:"ctime"`
 	Score   int              `db:"score"   json:"score" hasOne:"user_score:uid"`
 	//Score2  int              `db:"score2"  json:"score2" hasOne:"user_score:uid"`
 	Logs []*Log `json:"logs"  hasMany:"user_log:uid"`
@@ -82,17 +82,18 @@ func mysqlConf() *Config {
 }
 
 func TestModel_InsertSingle(t *testing.T) {
-
 	// T is ptr struct
 	m := New[*User]()
 
 	p := NewJson(&Profile{
 		Hobby: "will_ok",
 	})
+	r := NewCommaSlice(1, 3)
 
 	user := &User{
 		Name:    "ok",
 		Profile: p,
+		RoleIds: r,
 	}
 	_, err := m.Insert(user)
 	assert.Equal(t, nil, err)
@@ -103,10 +104,12 @@ func TestModel_InsertSingle(t *testing.T) {
 	p1 := NewJson(&Profile{
 		Hobby: "will_ok_1",
 	})
+	r1 := NewCommaSlice(1, 3)
 
 	user1 := User{
 		Name:    "ok_1",
 		Profile: p1,
+		RoleIds: r1,
 	}
 	_, err1 := m1.Insert(user1)
 	assert.Equal(t, nil, err1)
@@ -146,7 +149,7 @@ func TestModel_Update(t *testing.T) {
 	m := New[*User]()
 
 	p := NewJson(&Profile{
-		Hobby: "you",
+		Hobby: "youkkk",
 	})
 
 	user := &User{

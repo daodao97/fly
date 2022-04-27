@@ -19,7 +19,7 @@ func Len[T any](a []T) int {
 }
 
 func InArr[T comparable](arr []T, el T) bool {
-	return lo.IndexOf(arr, el) > 0
+	return lo.IndexOf(arr, el) > -1
 }
 
 func Remove[T any](arr []T, s int) []T {
