@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"reflect"
+	"time"
 )
 
 type reflectValueCache struct {
@@ -16,17 +17,21 @@ type reflectValueCache struct {
 	Index   int
 }
 
-func (m model[T]) hasOneData(list []T) ([]T, error) {
+func (m model) hasOneData(list interface{}) (result interface{}, err error) {
+	var kv []interface{}
+	defer dbLog(time.Now(), &err, &kv)
 	for _, opt := range m.modelInfo.HasOne {
 		_db, exist := DB(opt.Conn)
 		if !exist {
 			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
 		}
 
-		var pkv []any
+		var pkv []interface{}
 		var rc []reflectValueCache
-		for i, a := range list {
-			av := reflect.Indirect(reflect.ValueOf(a))
+		s := reflect.Indirect(reflect.ValueOf(list))
+		hasKey := snakeCaseToCamelCase(opt.LocalKey)
+		for i := 0; i < s.Len(); i++ {
+			av := reflect.Indirect(s.Index(i))
 			f, err := m.getStructFieldNameByTagName(opt.LocalKey)
 			if err != nil {
 				return nil, err
@@ -35,7 +40,7 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 			pkv = append(pkv, pk.Interface())
 			rc = append(rc, reflectValueCache{
 				Value:   av,
-				Pk:      f,
+				Pk:      hasKey,
 				PkValue: pk,
 				Index:   i,
 			})
@@ -48,11 +53,27 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+opt.LocalKey)
 		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
 
-		var _result []T
-		err := _db.Select(&_result, _sql, args...)
-		if err != nil {
-			return nil, err
+		kv = append(kv, "sql:", _sql, "args:", args)
+
+		_fields := append(opt.OtherKeys, opt.LocalKey)
+		builder := dynamicstruct.NewStruct()
+		for _, v := range _fields {
+			builder.AddField(snakeCaseToCamelCase(v), 0, fmt.Sprintf(`db:"%s"`, v))
 		}
+		rows, err := _db.Queryx(_sql, args...)
+		if err != nil {
+			return nil, errors.Wrap(err, "ggm.HasOne err")
+		}
+		var _result []interface{}
+		for rows.Next() {
+			tmp := builder.Build().New()
+			err := rows.StructScan(tmp)
+			if err != nil {
+				return nil, errors.Wrap(err, "ggm.HasOne.HasData")
+			}
+			_result = append(_result, tmp)
+		}
+		_ = rows.Close()
 
 		for _, av := range rc {
 			for _, b := range _result {
@@ -74,7 +95,7 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 							_av.FieldByName(item.Name).Set(av.Value.FieldByName(item.Name))
 						}
 						_av.FieldByName(_f).Set(bv.FieldByName(_f))
-						list[av.Index] = _av.Interface().(T)
+						s.Index(av.Index).Set(_av)
 					}
 				}
 			}
@@ -84,17 +105,21 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 	return list, nil
 }
 
-func (m model[T]) hasManyData(list []T) ([]T, error) {
+func (m model) hasManyData(list interface{}) (result interface{}, err error) {
+	var kv []interface{}
+	defer dbLog(time.Now(), &err, &kv)
 	for _, opt := range m.modelInfo.HasMany {
 		_db, exist := DB(opt.Conn)
 		if !exist {
 			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
 		}
 
-		var pkv []any
+		var pkv []interface{}
 		var rc []reflectValueCache
-		for i, a := range list {
-			av := reflect.Indirect(reflect.ValueOf(a))
+		s := reflect.Indirect(reflect.ValueOf(list))
+		hasKey := snakeCaseToCamelCase(opt.LocalKey)
+		for i := 0; i < s.Len(); i++ {
+			av := reflect.Indirect(s.Index(i))
 			f, err := m.getStructFieldNameByTagName(opt.LocalKey)
 			if err != nil {
 				return nil, err
@@ -103,7 +128,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 			pkv = append(pkv, pk.Interface())
 			rc = append(rc, reflectValueCache{
 				Value:   av,
-				Pk:      f,
+				Pk:      hasKey,
 				PkValue: pk,
 				Index:   i,
 			})
@@ -116,6 +141,8 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+"my_id")
 		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
 
+		kv = append(kv, "sql:", _sql, "args:", args)
+
 		rows, err := _db.Queryx(_sql, args...)
 		if err != nil {
 			return nil, err
@@ -125,7 +152,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 		source := reflect.New(ty).Interface()
 		builder := dynamicstruct.ExtendStruct(source).AddField("MyId", 0, `db:"my_id"`)
 
-		var result []any
+		var result []interface{}
 		for rows.Next() {
 			_result := builder.Build().New()
 			err := rows.StructScan(_result)
@@ -141,7 +168,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 			for _, b := range result {
 				bv := reflect.Indirect(reflect.ValueOf(b))
 				fk := bv.FieldByName("MyId")
-				if av.PkValue.Interface() == fk.Interface() {
+				if cast.ToString(av.PkValue.Interface()) == cast.ToString(fk.Interface()) {
 					hasM := reflect.New(ty)
 					for i := 0; i < ty.NumField(); i++ {
 						f := ty.Field(i)
@@ -166,7 +193,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 					_av.FieldByName(item.Name).Set(av.Value.FieldByName(item.Name))
 				}
 				_av.FieldByName(opt.StructField).Set(arr)
-				list[av.Index] = _av.Interface().(T)
+				s.Index(av.Index).Set(_av)
 			}
 		}
 	}
@@ -174,7 +201,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 	return list, nil
 }
 
-func (m model[T]) getStructFieldNameByTagName(name string) (string, error) {
+func (m model) getStructFieldNameByTagName(name string) (string, error) {
 	for _, v := range m.modelInfo.Fields {
 		if v.Name == name {
 			return v.Field, nil

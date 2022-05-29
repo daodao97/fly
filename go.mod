@@ -10,6 +10,7 @@ require (
 	github.com/ompluscator/dynamic-struct v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/samber/lo v1.10.1
+	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.7.1
 )
 
