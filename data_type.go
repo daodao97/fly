@@ -90,7 +90,7 @@ func (t Time) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Time) UnmarshalJSON(data []byte) error {
-	if len(data) == 2 {
+	if lenT(data) == 2 {
 		*t = Time(time.Time{})
 		return nil
 	}
@@ -112,7 +112,7 @@ func NewCommaSlice[T int | string](val ...T) *CommaSlice[T] {
 type CommaSlice[T int | string] []T
 
 func (t CommaSlice[T]) Value() (driver.Value, error) {
-	return Join(t), nil
+	return join(t), nil
 }
 
 func (t *CommaSlice[T]) Scan(value any) error {
@@ -131,7 +131,7 @@ func (t *CommaSlice[T]) Scan(value any) error {
 	}
 	v := string(bytes)
 	if v != "" {
-		*t = Split[T](v)
+		*t = split[T](v)
 	}
 	return nil
 }

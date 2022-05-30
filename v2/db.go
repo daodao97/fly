@@ -29,7 +29,7 @@ func Close() {
 	})
 }
 
-func DB(conn string) (*sqlx.DB, bool) {
+func xdb(conn string) (*sqlx.DB, bool) {
 	if _db, ok := pool.Load(conn); ok {
 		return _db.(*sqlx.DB), ok
 	}
@@ -52,7 +52,7 @@ func newDb(c *Config) (db *sqlx.DB, err error) {
 	return
 }
 
-// 生成 原生 DB 对象
+// 生成 原生 xdb 对象
 func makeDb(conf *Config) (*sqlx.DB, error) {
 	driver := conf.Driver
 	if driver == "" {

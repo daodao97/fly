@@ -17,7 +17,7 @@ func filterEmptyStr(arr []string) []string {
 	return tmp
 }
 
-func InArr(arr []string, el string) bool {
+func inArr(arr []string, el string) bool {
 	for _, v := range arr {
 		if v == el {
 			return true
@@ -26,7 +26,7 @@ func InArr(arr []string, el string) bool {
 	return false
 }
 
-func IndexOf(arr []string, el string) int {
+func indexOf(arr []string, el string) int {
 	for i, v := range arr {
 		if v == el {
 			return i
@@ -35,11 +35,11 @@ func IndexOf(arr []string, el string) int {
 	return -1
 }
 
-func Remove(slice []string, s int) []string {
+func remove(slice []string, s int) []string {
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func RemoveInterface(slice []interface{}, s int) []interface{} {
+func removeInterface(slice []interface{}, s int) []interface{} {
 	return append(slice[:s], slice[s+1:]...)
 }
 

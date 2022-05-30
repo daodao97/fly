@@ -21,7 +21,7 @@ func (m model) hasOneData(list interface{}) (result interface{}, err error) {
 	var kv []interface{}
 	defer dbLog(time.Now(), &err, &kv)
 	for _, opt := range m.modelInfo.HasOne {
-		_db, exist := DB(opt.Conn)
+		_db, exist := xdb(opt.Conn)
 		if !exist {
 			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
 		}
@@ -109,7 +109,7 @@ func (m model) hasManyData(list interface{}) (result interface{}, err error) {
 	var kv []interface{}
 	defer dbLog(time.Now(), &err, &kv)
 	for _, opt := range m.modelInfo.HasMany {
-		_db, exist := DB(opt.Conn)
+		_db, exist := xdb(opt.Conn)
 		if !exist {
 			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
 		}

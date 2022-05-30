@@ -21,7 +21,7 @@ func TestSelectBuilder(t *testing.T) {
 			),
 		),
 		WhereFindInSet("role", 3),
-		OrderBy("id", DESC),
+		OrderBy("id", OrderByDESC),
 	)
 
 	fmt.Println(sql, args)

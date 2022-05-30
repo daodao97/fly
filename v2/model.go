@@ -79,7 +79,7 @@ func (m *model) check() error {
 }
 
 func (m *model) xdb(name string) (*sqlx.DB, error) {
-	client, exist := DB(name)
+	client, exist := xdb(name)
 	if !exist {
 		return nil, fmt.Errorf("connection [%s] not exist", name)
 	}
@@ -87,7 +87,7 @@ func (m *model) xdb(name string) (*sqlx.DB, error) {
 }
 
 func (m *model) conn(name string) *model {
-	client, exist := DB(name)
+	client, exist := xdb(name)
 	m.client = client
 	if !exist {
 		m.err = fmt.Errorf("connection [%s] not exist", name)
@@ -223,7 +223,7 @@ func (m *model) Update(row interface{}, opt ...Option) (affectedRows int64, err 
 		return 0, errors.Wrap(err, "ggm.Update.structFields is empty")
 	}
 
-	index := IndexOf(fields, pk)
+	index := indexOf(fields, pk)
 	// if pk exist and opt is empty, and the struct.{pk} is zeroVal
 	// then we can not to update some record
 	if pk != "" && len(opt) == 0 && index == -1 {
@@ -233,8 +233,8 @@ func (m *model) Update(row interface{}, opt ...Option) (affectedRows int64, err 
 	if pk != "" && index > -1 {
 		opt = append(opt, WhereEq(pk, args[index]))
 		kv = append(kv, "id:", args[index])
-		fields = Remove(fields, index)
-		args = RemoveInterface(args, index)
+		fields = remove(fields, index)
+		args = removeInterface(args, index)
 	}
 
 	opt = append(opt, Table(m.table), Field(fields...), Value(args...))
@@ -319,7 +319,7 @@ func (m *model) pk() string {
 
 func (m *model) tInsertFields() (fields []string, err error) {
 	for _, f := range m.modelInfo.Fields {
-		if !InArr(f.Options, "ii") {
+		if !inArr(f.Options, "ii") {
 			fields = append(fields, f.Name)
 		}
 	}

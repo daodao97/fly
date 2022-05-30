@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func Len[T any](a []T) int {
+func lenT[T any](a []T) int {
 	count := 0
 	for range a {
 		count++
@@ -18,15 +18,15 @@ func Len[T any](a []T) int {
 	return count
 }
 
-func InArr[T comparable](arr []T, el T) bool {
+func inArr[T comparable](arr []T, el T) bool {
 	return lo.IndexOf(arr, el) > -1
 }
 
-func Remove[T any](arr []T, s int) []T {
+func remove[T any](arr []T, s int) []T {
 	return append(arr[:s], arr[s+1:]...)
 }
 
-func Join[T int | string](arr []T) string {
+func join[T int | string](arr []T) string {
 	var tmp []string
 	for _, v := range arr {
 		tmp = append(tmp, fmt.Sprintf("%v", v))
@@ -34,7 +34,7 @@ func Join[T int | string](arr []T) string {
 	return strings.Join(tmp, ",")
 }
 
-func Split[T int | string](str string) []T {
+func split[T int | string](str string) []T {
 	parts := strings.Split(str, ",")
 	var tmp []T
 	rt := reflectx.Deref(reflect.TypeOf(new(T)))

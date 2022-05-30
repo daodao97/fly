@@ -12,8 +12,8 @@ const deleteMod = "delete from %s"
 
 type OrderByType string
 
-const ASC OrderByType = "ASC"
-const DESC OrderByType = "DESC"
+const OrderByASC OrderByType = "ASC"
+const OrderByDESC OrderByType = "DESC"
 
 type Option = func(opts *Options)
 
@@ -402,7 +402,7 @@ func GroupBy(field string) Option {
 }
 
 func whereBuilder(condition []where) (sql string, args []interface{}) {
-	if len(condition) == 0 {
+	if lenT(condition) == 0 {
 		return "", nil
 	}
 	var tokens []string
@@ -456,7 +456,7 @@ func SelectBuilder(opts ...Option) (sql string, args []interface{}) {
 	_where, args := whereBuilder(_opts.where)
 	_field := "*"
 
-	if len(_opts.field) > 0 {
+	if lenT(_opts.field) > 0 {
 		_field = strings.Join(_opts.field, ", ")
 	}
 
@@ -526,7 +526,7 @@ func UpdateBuilder(opts ...Option) (sql string, args []interface{}) {
 	}
 	sql = fmt.Sprintf(updateMod, getTable(_opts), strings.Join(_val, ","))
 	args = _opts.value
-	if len(_opts.where) > 0 {
+	if lenT(_opts.where) > 0 {
 		_where, _args := whereBuilder(_opts.where)
 		sql = sql + " where " + _where
 		args = append(args, _args...)
@@ -540,7 +540,7 @@ func DeleteBuilder(opts ...Option) (sql string, args []interface{}) {
 		v(_opts)
 	}
 	sql = fmt.Sprintf(deleteMod, _opts.table)
-	if len(_opts.where) > 0 {
+	if lenT(_opts.where) > 0 {
 		_where, _args := whereBuilder(_opts.where)
 		sql = sql + " where " + _where
 		args = append(args, _args...)

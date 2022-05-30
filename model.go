@@ -88,7 +88,7 @@ func (m *model[T]) check() error {
 }
 
 func (m *model[T]) conn(name string) *model[T] {
-	client, exist := DB(name)
+	client, exist := xdb(name)
 	m.client = client
 	if !exist {
 		m.err = fmt.Errorf("connection [%s] not exist", name)
@@ -119,7 +119,7 @@ func (m *model[T]) Select(condition ...Option) (result []T, err error) {
 		return nil, errors.Wrap(err, "ggm.Select.sqlx_select")
 	}
 
-	if len(result) == 0 {
+	if lenT(result) == 0 {
 		return result, nil
 	}
 
@@ -142,7 +142,7 @@ func (m *model[T]) SelectOne(condition ...Option) (row T, err error) {
 	if err != nil {
 		return row, errors.Wrap(err, "ggm.SelectOne")
 	}
-	if Len(result) == 0 {
+	if lenT(result) == 0 {
 		return row, ErrNilRow
 	}
 	return result[0], nil
@@ -181,7 +181,7 @@ func (m *model[T]) Insert(rows ...T) (id int64, err error) {
 		return 0, errors.Wrap(err, "ggm.Insert.check")
 	}
 
-	if Len(rows) == 0 {
+	if lenT(rows) == 0 {
 		return 0, errors.New("ggm.Insert data is empty")
 	}
 
@@ -216,27 +216,27 @@ func (m *model[T]) Update(row T, opt ...Option) (affectedRows int64, err error) 
 	pk := m.pk()
 	// if pk not exist and opt is empty,
 	// then we can not to update some record
-	if pk == "" && len(opt) == 0 {
+	if pk == "" && lenT(opt) == 0 {
 		return 0, errors.New("ggm.Update not found update condition")
 	}
 
 	fields, args := m.tFieldValue(row)
-	if len(fields) == 0 {
+	if lenT(fields) == 0 {
 		return 0, errors.Wrap(err, "ggm.Update.structFields is empty")
 	}
 
 	index := lo.IndexOf(fields, pk)
 	// if pk exist and opt is empty, and the struct.{pk} is zeroVal
 	// then we can not to update some record
-	if pk != "" && len(opt) == 0 && index == -1 {
+	if pk != "" && lenT(opt) == 0 && index == -1 {
 		return 0, errors.New("ggm.Update if update condition is empty, please set the primary key")
 	}
 
 	if pk != "" && index > -1 {
 		opt = append(opt, WhereEq(pk, args[index]))
 		kv = append(kv, "id:", args[index])
-		fields = Remove(fields, index)
-		args = Remove(args, index)
+		fields = remove(fields, index)
+		args = remove(args, index)
 	}
 
 	opt = append(opt, Table(m.table), Field(fields...), Value(args...))
@@ -261,7 +261,7 @@ func (m *model[T]) Delete(opt ...Option) (ok bool, err error) {
 	var kv []any
 	defer dbLog(time.Now(), &err, &kv)
 
-	if len(opt) == 0 {
+	if lenT(opt) == 0 {
 		return false, errors.New("ggm.Delete condition is empty")
 	}
 	opt = append(opt, Table(m.table))
@@ -299,7 +299,7 @@ func (m *model[T]) pk() string {
 
 func (m *model[T]) tInsertFields() (fields []string, err error) {
 	for _, f := range m.modelInfo.Fields {
-		if !InArr[string](f.Options, "ii") {
+		if !inArr[string](f.Options, "ii") {
 			fields = append(fields, f.Name)
 		}
 	}

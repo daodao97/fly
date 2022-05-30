@@ -53,7 +53,7 @@ func Test_reflectNew(t *testing.T) {
 }
 
 func TestSplit(t *testing.T) {
-	res := Split[string]("1,2,3")
-	res1 := Split[int]("1,2,3")
+	res := split[string]("1,2,3")
+	res1 := split[int]("1,2,3")
 	spew.Dump(res, res1)
 }

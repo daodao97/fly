@@ -104,7 +104,7 @@ func getModelInfo(t reflect.Type) (*modelInfo, error) {
 			m.OtherFields = append(m.OtherFields, dbf)
 		}
 
-		if InArr(tokens, "pk") && m.PrimaryKey == "" {
+		if inArr(tokens, "pk") && m.PrimaryKey == "" {
 			m.PrimaryKey = tokens[0]
 			m.PrimaryKeyStructField = f.Name
 		}

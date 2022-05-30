@@ -18,7 +18,7 @@ type reflectValueCache struct {
 
 func (m model[T]) hasOneData(list []T) ([]T, error) {
 	for _, opt := range m.modelInfo.HasOne {
-		_db, exist := DB(opt.Conn)
+		_db, exist := xdb(opt.Conn)
 		if !exist {
 			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
 		}
@@ -41,7 +41,7 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 			})
 		}
 
-		if len(pkv) == 0 {
+		if lenT(pkv) == 0 {
 			return nil, errors.New("hasOne pk value is empty")
 		}
 
@@ -86,7 +86,7 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 
 func (m model[T]) hasManyData(list []T) ([]T, error) {
 	for _, opt := range m.modelInfo.HasMany {
-		_db, exist := DB(opt.Conn)
+		_db, exist := xdb(opt.Conn)
 		if !exist {
 			return nil, fmt.Errorf("can not find database conf [%s]", opt.Conn)
 		}
@@ -109,7 +109,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 			})
 		}
 
-		if len(pkv) == 0 {
+		if lenT(pkv) == 0 {
 			return nil, errors.New("hasMany pk value is empty")
 		}
 
@@ -150,7 +150,7 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 					tmp = append(tmp, hasM)
 				}
 			}
-			arr := reflect.MakeSlice(opt.RefType, 0, len(tmp))
+			arr := reflect.MakeSlice(opt.RefType, 0, lenT(tmp))
 			for _, v := range tmp {
 				if opt.RefType.Elem().Kind() == reflect.Ptr {
 					arr = reflect.Append(arr, v)
