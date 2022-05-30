@@ -45,6 +45,7 @@ func New(t TableName) *model {
 	if connName, ok := t.(ConnName); ok {
 		conn = connName.Conn()
 	}
+	m.connName = conn
 	m.conn(conn)
 
 	info, err := structInfo(t)
@@ -57,6 +58,7 @@ func New(t TableName) *model {
 }
 
 type model struct {
+	connName      string
 	client        *sqlx.DB
 	err           error
 	table         string
@@ -78,14 +80,6 @@ func (m *model) check() error {
 	return nil
 }
 
-func (m *model) xdb(name string) (*sqlx.DB, error) {
-	client, exist := xdb(name)
-	if !exist {
-		return nil, fmt.Errorf("connection [%s] not exist", name)
-	}
-	return client, nil
-}
-
 func (m *model) conn(name string) *model {
 	client, exist := xdb(name)
 	m.client = client
@@ -97,7 +91,7 @@ func (m *model) conn(name string) *model {
 
 func (m *model) Select(dest interface{}, condition ...Option) (err error) {
 	var kv []interface{}
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Select", time.Now(), &err, &kv)
 	fields, err := m.tFields()
 	if err != nil {
 		return errors.Wrap(err, "ggm.Select.structFields")
@@ -148,7 +142,7 @@ func (m *model) SelectOne(dest interface{}, condition ...Option) (err error) {
 
 func (m *model) Count(condition ...Option) (count int, err error) {
 	var kv []interface{}
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Count", time.Now(), &err, &kv)
 	if err := m.check(); err != nil {
 		return 0, err
 	}
@@ -174,7 +168,7 @@ func (m *model) Count(condition ...Option) (count int, err error) {
 
 func (m *model) Insert(rows ...interface{}) (id int64, err error) {
 	var kv []interface{}
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Insert", time.Now(), &err, &kv)
 	if err := m.check(); err != nil {
 		return 0, errors.Wrap(err, "ggm.Insert.check")
 	}
@@ -206,7 +200,7 @@ func (m *model) Insert(rows ...interface{}) (id int64, err error) {
 
 func (m *model) Update(row interface{}, opt ...Option) (affectedRows int64, err error) {
 	var kv []interface{}
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Update", time.Now(), &err, &kv)
 	if err := m.check(); err != nil {
 		return 0, errors.Wrap(err, "ggm.Update")
 	}
@@ -257,7 +251,7 @@ func (m *model) Update(row interface{}, opt ...Option) (affectedRows int64, err 
 
 func (m *model) Delete(opt ...Option) (ok bool, err error) {
 	var kv []interface{}
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Delete", time.Now(), &err, &kv)
 
 	if len(opt) == 0 {
 		return false, errors.New("ggm.Delete condition is empty")
@@ -326,9 +320,10 @@ func (m *model) tInsertFields() (fields []string, err error) {
 	return fields, nil
 }
 
-func dbLog(start time.Time, err *error, kv *[]interface{}) {
+func dbLog(prefix string, start time.Time, err *error, kv *[]interface{}) {
 	tc := time.Since(start)
 	log := []interface{}{
+		prefix,
 		"ums:", tc.Milliseconds(),
 	}
 	log = append(log, *kv...)

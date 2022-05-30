@@ -19,7 +19,7 @@ type reflectValueCache struct {
 
 func (m model) hasOneData(list interface{}) (result interface{}, err error) {
 	var kv []interface{}
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("hasOne", time.Now(), &err, &kv)
 	for _, opt := range m.modelInfo.HasOne {
 		_db, exist := xdb(opt.Conn)
 		if !exist {
@@ -107,7 +107,7 @@ func (m model) hasOneData(list interface{}) (result interface{}, err error) {
 
 func (m model) hasManyData(list interface{}) (result interface{}, err error) {
 	var kv []interface{}
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("hasMany", time.Now(), &err, &kv)
 	for _, opt := range m.modelInfo.HasMany {
 		_db, exist := xdb(opt.Conn)
 		if !exist {

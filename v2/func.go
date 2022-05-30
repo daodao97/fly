@@ -43,6 +43,15 @@ func removeInterface(slice []interface{}, s int) []interface{} {
 	return append(slice[:s], slice[s+1:]...)
 }
 
+func reflectNew(el interface{}) interface{} {
+	t := reflect.TypeOf(el)
+	if t.Elem().Kind() == reflect.Pointer {
+		return reflect.New(t.Elem().Elem()).Interface()
+	}
+
+	return reflect.New(t.Elem()).Elem().Interface()
+}
+
 func structFields(el interface{}) ([]string, error) {
 	sType := reflectx.Deref(reflect.TypeOf(el))
 

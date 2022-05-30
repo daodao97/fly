@@ -4,17 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"time"
 )
 
-func (m *model[T]) cacheKeyPrefix(id int64) string {
+func (m *model) cacheKeyPrefix(id int64) string {
 	return fmt.Sprintf("%s-%s-%d", m.connName, m.modelInfo.Name, id)
 }
 
-func (m *model[T]) FindBy(id int64) (T, error) {
-	t := reflectNew[T]().(T)
+func (m *model) FindBy(id int64, dest interface{}) (err error) {
+	var kv []interface{}
+	defer dbLog("FindBy", time.Now(), &err, &kv)
 	pk := m.pk()
 	if pk == "" {
-		return t, ErrPrimaryKeyNotDefined
+		return ErrPrimaryKeyNotDefined
 	}
 	if cache == nil {
 		return m.SelectOne(WhereEq(pk, id))
@@ -23,31 +25,34 @@ func (m *model[T]) FindBy(id int64) (T, error) {
 	key := m.cacheKeyPrefix(id)
 	c, err := cache.Get(key)
 	if err != nil {
-		return t, errors.Wrap(err, "get cache error")
+		return errors.Wrap(err, "get cache error")
 	}
 	if c != "" {
-		err := json.Unmarshal([]byte(c), t)
+		err := json.Unmarshal([]byte(c), dest)
 		if err != nil {
-			return t, err
+			return err
 		}
-		return t, nil
+		kv = append(kv, "load from cache", key)
+		return nil
 	}
-	row, err := m.SelectOne(WhereEq(pk, id))
+
+	kv = append(kv, "load from db", key)
+	err = m.SelectOne(dest, WhereEq(pk, id))
 	if err != nil {
-		return t, err
+		return err
 	}
-	bytes, err := json.Marshal(row)
+	bytes, err := json.Marshal(dest)
 	if err != nil {
-		return t, err
+		return err
 	}
 	err = cache.Set(key, string(bytes))
 	if err != nil {
-		return t, err
+		return err
 	}
-	return row, nil
+	return nil
 }
 
-func (m *model[T]) UpdateBy(id int64, row T) (int64, error) {
+func (m *model) UpdateBy(id int64, row interface{}) (int64, error) {
 	pk := m.pk()
 	if pk == "" {
 		return 0, ErrPrimaryKeyNotDefined

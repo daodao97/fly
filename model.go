@@ -45,6 +45,7 @@ func New[T TableName]() *model[T] {
 	if connName, ok := t.(ConnName); ok {
 		conn = connName.Conn()
 	}
+	m.connName = conn
 	m.conn(conn)
 
 	info, err := structInfo[T]()
@@ -66,6 +67,7 @@ func NewConn[T TableName](c *Config) *model[T] {
 }
 
 type model[T TableName] struct {
+	connName      string
 	client        *sqlx.DB
 	err           error
 	table         string
