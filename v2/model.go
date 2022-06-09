@@ -334,3 +334,17 @@ func dbLog(prefix string, start time.Time, err *error, kv *[]interface{}) {
 	}
 	_ = logger.Log(LevelDebug, log...)
 }
+
+func dbLog2(prefix string, start time.Time, end time.Time, err *error, kv *[]interface{}) {
+	log := []interface{}{
+		prefix,
+		"ums:", end.UnixMilli() - start.UnixMilli(),
+	}
+	log = append(log, *kv...)
+	if *err != nil {
+		log = append(log, "error:", *err)
+		_ = logger.Log(LevelErr, log...)
+		return
+	}
+	_ = logger.Log(LevelDebug, log...)
+}

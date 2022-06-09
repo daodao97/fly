@@ -49,6 +49,7 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+opt.LocalKey)
 		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
 
+		timeStart := time.Now()
 		var _result []T
 		err := _db.Select(&_result, _sql, args...)
 		if err != nil {
@@ -58,7 +59,7 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 		kv := []interface{}{
 			"sql:", _sql, "args:", args,
 		}
-		defer dbLog(time.Now(), &err, &kv)
+		dbLog2("HasOne", timeStart, time.Now(), &err, &kv)
 
 		for _, av := range rc {
 			for _, b := range _result {
@@ -122,10 +123,15 @@ func (m model[T]) hasManyData(list []T) ([]T, error) {
 		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+"my_id")
 		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
 
+		timeStart := time.Now()
 		rows, err := _db.Queryx(_sql, args...)
 		if err != nil {
 			return nil, err
 		}
+		kv := []interface{}{
+			"sql:", _sql, "args:", args,
+		}
+		dbLog2("HasMany", timeStart, time.Now(), &err, &kv)
 
 		ty := reflectx.Deref(opt.RefType.Elem())
 		source := reflect.New(ty).Interface()

@@ -18,8 +18,6 @@ type reflectValueCache struct {
 }
 
 func (m model) hasOneData(list interface{}) (result interface{}, err error) {
-	var kv []interface{}
-	defer dbLog("hasOne", time.Now(), &err, &kv)
 	for _, opt := range m.modelInfo.HasOne {
 		_db, exist := xdb(opt.Conn)
 		if !exist {
@@ -53,13 +51,13 @@ func (m model) hasOneData(list interface{}) (result interface{}, err error) {
 		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+opt.LocalKey)
 		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
 
-		kv = append(kv, "sql:", _sql, "args:", args)
-
 		_fields := append(opt.OtherKeys, opt.LocalKey)
 		builder := dynamicstruct.NewStruct()
 		for _, v := range _fields {
 			builder.AddField(snakeCaseToCamelCase(v), 0, fmt.Sprintf(`db:"%s"`, v))
 		}
+		
+		timeStart := time.Now()
 		rows, err := _db.Queryx(_sql, args...)
 		if err != nil {
 			return nil, errors.Wrap(err, "ggm.HasOne err")
@@ -74,6 +72,9 @@ func (m model) hasOneData(list interface{}) (result interface{}, err error) {
 			_result = append(_result, tmp)
 		}
 		_ = rows.Close()
+
+		kv := []interface{}{"sql:", _sql, "args:", args}
+		dbLog2("HasOne", timeStart, time.Now(), &err, &kv)
 
 		for _, av := range rc {
 			for _, b := range _result {
@@ -106,8 +107,6 @@ func (m model) hasOneData(list interface{}) (result interface{}, err error) {
 }
 
 func (m model) hasManyData(list interface{}) (result interface{}, err error) {
-	var kv []interface{}
-	defer dbLog("hasMany", time.Now(), &err, &kv)
 	for _, opt := range m.modelInfo.HasMany {
 		_db, exist := xdb(opt.Conn)
 		if !exist {
@@ -141,8 +140,7 @@ func (m model) hasManyData(list interface{}) (result interface{}, err error) {
 		fields := append(opt.OtherKeys, opt.ForeignKey+" as "+"my_id")
 		_sql, args := SelectBuilder(Field(fields...), Database(opt.DB), Table(opt.Table), WhereIn(opt.ForeignKey, pkv))
 
-		kv = append(kv, "sql:", _sql, "args:", args)
-
+		timeStart := time.Now()
 		rows, err := _db.Queryx(_sql, args...)
 		if err != nil {
 			return nil, err
@@ -162,6 +160,10 @@ func (m model) hasManyData(list interface{}) (result interface{}, err error) {
 			result = append(result, _result)
 		}
 		_ = rows.Close()
+		kv := []interface{}{
+			"sql:", _sql, "args:", args,
+		}
+		dbLog2("HasMany", timeStart, time.Now(), &err, &kv)
 
 		for _, av := range rc {
 			var tmp []reflect.Value

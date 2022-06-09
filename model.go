@@ -100,7 +100,7 @@ func (m *model[T]) conn(name string) *model[T] {
 
 func (m *model[T]) Select(condition ...Option) (result []T, err error) {
 	var kv []any
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Select", time.Now(), &err, &kv)
 	if err := m.check(); err != nil {
 		return nil, errors.Wrap(err, "ggm.Select.check")
 	}
@@ -152,7 +152,7 @@ func (m *model[T]) SelectOne(condition ...Option) (row T, err error) {
 
 func (m *model[T]) Count(condition ...Option) (count int, err error) {
 	var kv []any
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Count", time.Now(), &err, &kv)
 	if err := m.check(); err != nil {
 		return 0, err
 	}
@@ -178,7 +178,7 @@ func (m *model[T]) Count(condition ...Option) (count int, err error) {
 
 func (m *model[T]) Insert(rows ...T) (id int64, err error) {
 	var kv []any
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Insert", time.Now(), &err, &kv)
 	if err := m.check(); err != nil {
 		return 0, errors.Wrap(err, "ggm.Insert.check")
 	}
@@ -210,7 +210,7 @@ func (m *model[T]) Insert(rows ...T) (id int64, err error) {
 
 func (m *model[T]) Update(row T, opt ...Option) (affectedRows int64, err error) {
 	var kv []any
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Update", time.Now(), &err, &kv)
 	if err := m.check(); err != nil {
 		return 0, errors.Wrap(err, "ggm.Update")
 	}
@@ -261,7 +261,7 @@ func (m *model[T]) Update(row T, opt ...Option) (affectedRows int64, err error) 
 
 func (m *model[T]) Delete(opt ...Option) (ok bool, err error) {
 	var kv []any
-	defer dbLog(time.Now(), &err, &kv)
+	defer dbLog("Delete", time.Now(), &err, &kv)
 
 	if lenT(opt) == 0 {
 		return false, errors.New("ggm.Delete condition is empty")
@@ -330,10 +330,25 @@ func (m *model[T]) tFieldValue(t T) (field []string, value []any) {
 	return field, value
 }
 
-func dbLog(start time.Time, err *error, kv *[]any) {
+func dbLog(prefix string, start time.Time, err *error, kv *[]interface{}) {
 	tc := time.Since(start)
-	log := []any{
+	log := []interface{}{
+		prefix,
 		"ums:", tc.Milliseconds(),
+	}
+	log = append(log, *kv...)
+	if *err != nil {
+		log = append(log, "error:", *err)
+		_ = logger.Log(LevelErr, log...)
+		return
+	}
+	_ = logger.Log(LevelDebug, log...)
+}
+
+func dbLog2(prefix string, start time.Time, end time.Time, err *error, kv *[]interface{}) {
+	log := []interface{}{
+		prefix,
+		"ums:", end.UnixMilli() - start.UnixMilli(),
 	}
 	log = append(log, *kv...)
 	if *err != nil {
