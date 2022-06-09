@@ -50,7 +50,7 @@ func SetLogger(customLogger Logger, customLimitLevel Level) {
 
 func newStdOutLogger() Logger {
 	return &stdOutLogger{
-		logger: log.New(os.Stdout, "GGM LOG: ", log.Ltime),
+		logger: log.New(os.Stdout, "GGM LOG: ", log.Lmicroseconds),
 	}
 }
 

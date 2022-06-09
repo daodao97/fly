@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"reflect"
+	"time"
 )
 
 type reflectValueCache struct {
@@ -53,6 +54,11 @@ func (m model[T]) hasOneData(list []T) ([]T, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		kv := []interface{}{
+			"sql:", _sql, "args:", args,
+		}
+		defer dbLog(time.Now(), &err, &kv)
 
 		for _, av := range rc {
 			for _, b := range _result {
