@@ -261,11 +261,11 @@ func (m *model) Delete(opt ...Option) (ok bool, err error) {
 	if m.fakeDeleteKey != "" {
 		opt = append(opt, Field(m.fakeDeleteKey), Value(1))
 		_sql, _args := UpdateBuilder(opt...)
-		kv = append(kv, "slq:", _sql, "args:", _args)
+		kv = append(kv, "sql:", _sql, "args:", _args)
 		result, err = m.Exec(_sql, _args...)
 	} else {
 		_sql, _args := DeleteBuilder(opt...)
-		kv = append(kv, "slq:", _sql, "args:", _args)
+		kv = append(kv, "sql:", _sql, "args:", _args)
 		result, err = m.Exec(_sql, _args...)
 	}
 
