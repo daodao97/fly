@@ -172,6 +172,9 @@ func (m *model) Insert(record interface{}) (lastId int64, err error) {
 	if err != nil {
 		return 0, err
 	}
+	if len(_record) == 0 {
+		return 0, errors.New("empty record to insert, if your record is struct please set db tag")
+	}
 
 	_record, err = m.hookInput(_record)
 	if err != nil {
@@ -215,6 +218,9 @@ func (m *model) Update(record interface{}, opt ...Option) (ok bool, err error) {
 	_record, err := util.DecodeToMap(record, m.saveZero)
 	if err != nil {
 		return false, err
+	}
+	if len(_record) == 0 {
+		return false, errors.New("empty record to update, if your record is struct please set db tag")
 	}
 
 	if id, ok := _record[m.primaryKey]; ok {
