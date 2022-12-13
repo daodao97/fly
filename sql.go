@@ -65,7 +65,7 @@ type Options struct {
 	table    string
 	field    []string
 	where    []where
-	orderBy  string
+	orderBy  []string
 	groupBy  string
 	limit    int
 	offset   int
@@ -434,13 +434,13 @@ func WhereOrFindInSet(field string, value interface{}) Option {
 
 func OrderByDesc(field string) Option {
 	return func(opts *Options) {
-		opts.orderBy = "`" + field + "` " + "desc"
+		opts.orderBy = append(opts.orderBy, "`"+field+"` "+"desc")
 	}
 }
 
 func OrderByAsc(field string) Option {
 	return func(opts *Options) {
-		opts.orderBy = "`" + field + "` " + "asc"
+		opts.orderBy = append(opts.orderBy, "`"+field+"` "+"asc")
 	}
 }
 
@@ -515,8 +515,8 @@ func SelectBuilder(opts ...Option) (sql string, args []interface{}) {
 		sql = sql + " where " + _where
 	}
 
-	if _opts.orderBy != "" {
-		sql = sql + " order by " + _opts.orderBy
+	if len(_opts.orderBy) > 0 {
+		sql = sql + " order by " + strings.Join(_opts.orderBy, ", ")
 	}
 
 	if _opts.groupBy != "" {
