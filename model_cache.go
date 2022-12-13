@@ -53,7 +53,7 @@ func (m *model) FindBy(id int64) *Row {
 	return row
 }
 
-func (m *model) UpdateBy(id int64, record interface{}) (bool, error) {
+func (m *model) UpdateBy(id int64, record Record) (bool, error) {
 	if cache == nil {
 		return false, errors.New("cache instance is nil")
 	}

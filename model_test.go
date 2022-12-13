@@ -7,8 +7,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/daodao97/fly/interval/util"
 )
 
 var dsn = "root@tcp(127.0.0.1:3306)/fly_test?&parseTime=true"
@@ -75,9 +73,6 @@ func Test_Insert(t *testing.T) {
 
 	_, err = m.Insert(u)
 	assert.NotEqual(t, nil, err)
-
-	_, err = m.Insert(1)
-	assert.Equal(t, util.ErrParamsType, err)
 }
 
 func Test_Select(t *testing.T) {
@@ -105,19 +100,19 @@ func Test_SelectOne(t *testing.T) {
 }
 
 func Test_Update(t *testing.T) {
-	result, err := m.Update(User{
-		ID:   1,
-		Name: "星矢",
-		Profile: &Profile{
-			Hobby: "天马流行拳",
-		},
-		RoleIds: []int{2, 3},
-		CTime:   time.Now().UTC(),
-	})
-	assert.Equal(t, nil, err)
-	assert.Equal(t, true, result)
+	//result, err := m.Update(User{
+	//	ID:   1,
+	//	Name: "星矢",
+	//	Profile: &Profile{
+	//		Hobby: "天马流行拳",
+	//	},
+	//	RoleIds: []int{2, 3},
+	//	CTime:   time.Now().UTC(),
+	//})
+	//assert.Equal(t, nil, err)
+	//assert.Equal(t, true, result)
 
-	result, err = m.Update(map[string]interface{}{
+	result, err := m.Update(map[string]interface{}{
 		"id":   1,
 		"name": "星矢1",
 		"profile": &Profile{

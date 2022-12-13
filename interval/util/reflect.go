@@ -1,6 +1,9 @@
 package util
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // Deref is Indirect for reflect.Types
 func Deref(t reflect.Type) reflect.Type {
@@ -22,6 +25,7 @@ var typeChecker = map[string]func(t reflect.Type) bool{
 
 func AllowType(v interface{}, types []string) (ok bool) {
 	ty := reflect.TypeOf(v)
+	fmt.Println(111, ty.Kind())
 	for _, t := range types {
 		if ok {
 			return ok

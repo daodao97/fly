@@ -5,22 +5,22 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/daodao97/fly/interval/util"
 )
+
+type Record = map[string]interface{}
 
 type Model interface {
 	PrimaryKey() string
 	Select(opt ...Option) (rows *Rows)
 	SelectOne(opt ...Option) *Row
 	Count(opt ...Option) (count int64, err error)
-	Insert(record interface{}) (lastId int64, err error)
-	Update(record interface{}, opt ...Option) (ok bool, err error)
+	Insert(record Record) (lastId int64, err error)
+	Update(record Record, opt ...Option) (ok bool, err error)
 	Delete(opt ...Option) (ok bool, err error)
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	FindBy(id int64) *Row
-	UpdateBy(id int64, record interface{}) (bool, error)
+	UpdateBy(id int64, record Record) (bool, error)
 }
 
 type model struct {
@@ -160,7 +160,7 @@ func (m *model) Count(opt ...Option) (count int64, err error) {
 	return result.Count, nil
 }
 
-func (m *model) Insert(record interface{}) (lastId int64, err error) {
+func (m *model) Insert(record Record) (lastId int64, err error) {
 	if m.err != nil {
 		return 0, m.err
 	}
@@ -168,10 +168,11 @@ func (m *model) Insert(record interface{}) (lastId int64, err error) {
 	var kv []interface{}
 	defer dbLog("Insert", time.Now(), &err, &kv)
 
-	_record, err := util.DecodeToMap(record, m.saveZero)
-	if err != nil {
-		return 0, err
-	}
+	_record := record
+	//_record, err := util.DecodeToMap(record, m.saveZero)
+	//if err != nil {
+	//	return 0, err
+	//}
 	if len(_record) == 0 {
 		return 0, errors.New("empty record to insert, if your record is struct please set db tag")
 	}
@@ -207,7 +208,7 @@ func (m *model) Insert(record interface{}) (lastId int64, err error) {
 	return result.LastInsertId()
 }
 
-func (m *model) Update(record interface{}, opt ...Option) (ok bool, err error) {
+func (m *model) Update(record Record, opt ...Option) (ok bool, err error) {
 	if m.err != nil {
 		return false, m.err
 	}
@@ -215,10 +216,11 @@ func (m *model) Update(record interface{}, opt ...Option) (ok bool, err error) {
 	var kv []interface{}
 	defer dbLog("Update", time.Now(), &err, &kv)
 
-	_record, err := util.DecodeToMap(record, m.saveZero)
-	if err != nil {
-		return false, err
-	}
+	_record := record
+	//_record, err := util.DecodeToMap(record, m.saveZero)
+	//if err != nil {
+	//	return false, err
+	//}
 	if len(_record) == 0 {
 		return false, errors.New("empty record to update, if your record is struct please set db tag")
 	}

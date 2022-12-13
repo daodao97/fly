@@ -16,11 +16,23 @@ func Test_allowTypes(t *testing.T) {
 
 	assert.Equal(t, true, AllowType(a, []string{"struct"}))
 
+	a1 := new([]struct {
+		A int
+	})
+
+	assert.Equal(t, true, AllowType(a1, []string{"*[]struct"}))
+
 	b := &struct {
 		A int
 	}{}
 
 	assert.Equal(t, true, AllowType(b, []string{"*struct"}))
+
+	b1 := new([]*struct {
+		A int
+	})
+
+	assert.Equal(t, true, AllowType(b1, []string{"*[]*struct"}))
 
 	c := map[string]interface{}{
 		"a": 1,
