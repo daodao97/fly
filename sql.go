@@ -32,7 +32,7 @@ func (r *Row) Binding(dest interface{}) error {
 		return ErrRowBindingType
 	}
 
-	return util.Decoder(r.Data, dest)
+	return util.Binding(r.Data, dest)
 }
 
 func (r Row) Get(key string) (interface{}, bool) {
@@ -55,7 +55,7 @@ func (r *Rows) Binding(dest interface{}) error {
 		source = append(source, v.Data)
 	}
 
-	return util.Decoder(source, dest)
+	return util.Binding(source, dest)
 }
 
 type Option = func(opts *Options)

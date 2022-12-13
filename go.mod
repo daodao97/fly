@@ -16,4 +16,8 @@ require (
 	muzzammil.xyz/jsonc v1.0.0
 )
 
-require github.com/davecgh/go-spew v1.1.1
+require (
+	github.com/davecgh/go-spew v1.1.1
+	github.com/json-iterator/go v1.1.12
+	github.com/tidwall/gjson v1.14.4
+)

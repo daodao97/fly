@@ -1,7 +1,9 @@
 package util
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
@@ -57,4 +59,24 @@ func Test_struct2Map(t *testing.T) {
 	m, err := DecodeToMap(a, false)
 	assert.Equal(t, nil, err)
 	spew.Dump(m)
+}
+
+func Test_Decoder(t *testing.T) {
+	type A struct {
+		F1 [][]int   `json:"f_1,omitempty"`
+		T  time.Time `json:"t"`
+	}
+
+	data := map[string]interface{}{
+		"f_1": [][]int{{1}, {2}},
+		"t":   time.Now(),
+	}
+	var a A
+	err := Decoder(data, &a)
+	assert.Equal(t, nil, err)
+	spew.Dump(a)
+
+	_data, _ := json.Marshal(data)
+	_ = json.Unmarshal(_data, &a)
+	spew.Dump(a)
 }

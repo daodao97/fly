@@ -1,12 +1,25 @@
 package util
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
 	"reflect"
+	"sync"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
+	"github.com/json-iterator/go/extra"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
+
+func init() {
+	once := sync.Once{}
+	once.Do(func() {
+		extra.RegisterFuzzyDecoders()
+	})
+}
 
 var ErrParamsType = errors.New("param record type must be map[string]interface, *map[string]interface, struct, *struct")
 
@@ -37,6 +50,34 @@ func DecodeToMap(s interface{}, saveZero bool) (map[string]interface{}, error) {
 	}
 
 	return nil, ErrParamsType
+}
+
+func Binding(from interface{}, to interface{}) error {
+	switch from := from.(type) {
+	case []byte:
+		return jsoniter.Unmarshal(from, to)
+	case string:
+		if from == "" {
+			return fmt.Errorf("the source data is empty string")
+		}
+		return jsoniter.UnmarshalFromString(from, to)
+	case io.ReadCloser:
+		body, err := ioutil.ReadAll(from)
+		if err != nil {
+			return err
+		}
+		return Binding(body, to)
+	default:
+		tmp, err := jsoniter.Marshal(from)
+		if err != nil {
+			return err
+		}
+		err = jsoniter.Unmarshal(tmp, to)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 }
 
 func Decoder(source, dest interface{}) error {
