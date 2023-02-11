@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -25,7 +24,6 @@ var typeChecker = map[string]func(t reflect.Type) bool{
 
 func AllowType(v interface{}, types []string) (ok bool) {
 	ty := reflect.TypeOf(v)
-	fmt.Println(111, ty.Kind())
 	for _, t := range types {
 		if ok {
 			return ok

@@ -2,8 +2,10 @@ package fly
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/fatih/color"
@@ -71,7 +73,7 @@ func (s stdOutLogger) Log(level Level, keyValues ...interface{}) error {
 	if level < limitLevel {
 		return nil
 	}
-	args := []interface{}{level.String()}
+	args := []interface{}{level.String(), "caller:", caller(4)}
 	args = append(args, keyValues...)
 
 	for i, v := range args {
@@ -83,6 +85,14 @@ func (s stdOutLogger) Log(level Level, keyValues ...interface{}) error {
 
 	s.logger.Println(args...)
 	return nil
+}
+
+func caller(skip int) string {
+	_, file, line, ok := runtime.Caller(skip)
+	if ok {
+		return fmt.Sprintf("%s:%d", file, line)
+	}
+	return ""
 }
 
 func dbLog(prefix string, start time.Time, err *error, kv *[]interface{}) {
