@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/daodao97/fly/interval/util"
+	"github.com/spf13/cast"
 )
 
 var ErrRowBindingType = errors.New("binding dest type must be *struct **struct")
@@ -28,6 +29,9 @@ func (r *Row) MarshalJSON() ([]byte, error) {
 }
 
 func (r *Row) Binding(dest interface{}) error {
+	if r.Err != nil {
+		return r.Err
+	}
 	if !util.AllowType(dest, []string{"*struct", "**struct"}) {
 		return ErrRowBindingType
 	}
@@ -38,6 +42,14 @@ func (r *Row) Binding(dest interface{}) error {
 func (r Row) Get(key string) (interface{}, bool) {
 	v, ok := r.Data[key]
 	return v, ok
+}
+
+func (r Row) GetString(key string) string {
+	v, ok := r.Data[key]
+	if !ok {
+		return ""
+	}
+	return cast.ToString(v)
 }
 
 type Rows struct {

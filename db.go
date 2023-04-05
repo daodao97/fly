@@ -60,6 +60,10 @@ func db(conn string) (*sql.DB, error) {
 	return nil, errors.New("connection not found : " + conn)
 }
 
+func DB(conn string) (*sql.DB, error) {
+	return db(conn)
+}
+
 func newDb(conf *Config) (*sql.DB, error) {
 	driver := conf.Driver
 	if driver == "" {

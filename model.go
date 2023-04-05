@@ -142,7 +142,9 @@ func (m *model) SelectOne(opt ...Option) *Row {
 		return &Row{Err: rows.Err}
 	}
 	if len(rows.List) == 0 {
-		return &Row{}
+		return &Row{
+			Err: errors.New("not found"),
+		}
 	}
 	return &rows.List[0]
 }
