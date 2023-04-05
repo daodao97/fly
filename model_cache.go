@@ -33,7 +33,7 @@ func (m *model) FindBy(id int64) *Row {
 		if err != nil {
 			return &Row{Err: err}
 		}
-		_ = logger.Log(LevelDebug, "FindBy id:", id, "form cache", c)
+		Info("FindBy id:", id, "form cache", c)
 		return &Row{Data: result}
 	}
 
@@ -47,7 +47,7 @@ func (m *model) FindBy(id int64) *Row {
 		if err != nil {
 			return &Row{Err: err}
 		}
-		_ = logger.Log(LevelDebug, "FindBy id:", id, "set cache", string(c))
+		Info("FindBy id:", id, "set cache", string(c))
 	}
 
 	return row
@@ -66,7 +66,7 @@ func (m *model) UpdateBy(id int64, record Record) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	_ = logger.Log(LevelDebug, "del key after UpdateBy id:", id)
+	Info("del key after UpdateBy id:", id)
 
 	return true, nil
 }

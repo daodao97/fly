@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	github.com/daodao97/gokit v0.0.0-20230405022517-eccc544d98ce
+	github.com/daodao97/gokit v0.0.0-20230405022517-eccc544d98ce // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-isatty v0.0.18 // indirect
