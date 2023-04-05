@@ -8,7 +8,6 @@ require (
 )
 
 require (
-	github.com/fatih/color v1.15.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
@@ -17,7 +16,7 @@ require (
 )
 
 require (
-	github.com/daodao97/gokit v0.0.0-20230405022517-eccc544d98ce // indirect
+	github.com/daodao97/gokit v0.0.0-20230405022517-eccc544d98ce
 	github.com/davecgh/go-spew v1.1.1
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-isatty v0.0.18 // indirect
