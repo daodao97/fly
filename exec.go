@@ -65,7 +65,7 @@ func destination(columnTypes []*sql.ColumnType) func() []interface{} {
 					return new(string)
 				})
 			}
-		case "INT", "TINYINT", "INTEGER", "SMALLINT", "MEDIUMINT":
+		case "INT", "TINYINT", "INTEGER", "SMALLINT", "MEDIUMINT", "TINYINTEGER":
 			dest = append(dest, func() interface{} {
 				return new(int)
 			})
