@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var ErrNotFound = errors.New("record not found")
+
 type Record = map[string]interface{}
 
 type Model interface {
@@ -143,7 +145,7 @@ func (m *model) SelectOne(opt ...Option) *Row {
 	}
 	if len(rows.List) == 0 {
 		return &Row{
-			Err: errors.New("not found"),
+			Err: ErrNotFound,
 		}
 	}
 	return &rows.List[0]
